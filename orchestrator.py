@@ -165,7 +165,7 @@ REVIEW_SCHEMA = {"type": "object", "properties": {
 class Controller:
     def __init__(self, data, config=None):
         self.data = Path(data).resolve()
-        self.data.mkdir(parents=True, exist_ok=True)
+        self.assert_current_database(self.data)
         self.config = config or {"executor": {"client": "mock", "model": "mock-executor"},
                                  "reviewer": {"client": "mock", "model": "mock-reviewer"}}
         for role in ("executor", "reviewer"):
@@ -176,6 +176,7 @@ class Controller:
                 raise ValueError("Paid fallback is prohibited")
             if not route.get("model"):
                 raise ValueError("Explicit model is required")
+        self.data.mkdir(parents=True, exist_ok=True)
         self.db = sqlite3.connect(self.data / "state.sqlite", timeout=15)
         self.db.row_factory = sqlite3.Row
         self.db.execute("PRAGMA journal_mode=WAL")
@@ -186,7 +187,8 @@ class Controller:
         CREATE TABLE IF NOT EXISTS tasks(id TEXT PRIMARY KEY, project_id TEXT, local_id TEXT,
           spec TEXT, spec_version INTEGER, state TEXT, attempt INTEGER DEFAULT 0,
           owner TEXT, lease_until REAL, session_id TEXT, reviewer_id TEXT, manifest_hash TEXT,
-          check_ref TEXT, review_ref TEXT, error_class TEXT, UNIQUE(project_id,local_id));
+          check_ref TEXT, review_ref TEXT, error_class TEXT, acceptance_proof TEXT,
+          acceptance_proof_hash TEXT, UNIQUE(project_id,local_id));
         CREATE TABLE IF NOT EXISTS events(cursor INTEGER PRIMARY KEY AUTOINCREMENT,
           project_id TEXT, task_id TEXT, kind TEXT, created REAL, UNIQUE(task_id,kind));
         CREATE TABLE IF NOT EXISTS decisions(id TEXT PRIMARY KEY, project_id TEXT, task_id TEXT,
@@ -198,11 +200,22 @@ class Controller:
         ''')
         self.db.commit()
         self.owner = str(uuid.uuid4())
-        with self.immediate():
-            columns = {r[1] for r in self.db.execute("PRAGMA table_info(tasks)")}
-            for name in ("acceptance_proof", "acceptance_proof_hash"):
-                if name not in columns:
-                    self.db.execute("ALTER TABLE tasks ADD COLUMN " + name + " TEXT")
+
+    @staticmethod
+    def assert_current_database(data):
+        """Inspect the schema without migrating or opening the authority for writing."""
+        database = Path(data).resolve() / "state.sqlite"
+        if not database.is_file():
+            return
+        observer = sqlite3.connect(database.as_uri() + "?mode=ro", uri=True, timeout=15)
+        try:
+            columns = {r[1] for r in observer.execute("PRAGMA table_info(tasks)")}
+            if columns and not {"acceptance_proof", "acceptance_proof_hash"} <= columns:
+                raise ValueError("LEGACY_DATA_REQUIRES_EXPLICIT_MIGRATION: leave this database unchanged; "
+                                 "use watch_project.py for read-only history or a new data directory. "
+                                 "Copied legacy data still needs explicit evidence reconciliation; automatic migration is disabled.")
+        finally:
+            observer.close()
 
     @contextmanager
     def immediate(self):
@@ -242,15 +255,14 @@ class Controller:
                     raise RuntimeError("BUDGET_EXHAUSTED: master turn cap reached")
             call_id = self.db.execute("INSERT INTO calls(task_id,role,model,started) VALUES(?,?,?,?)",
                 (task_id, role, model, time.time())).lastrowid
-            if role != "master":
-                self.event(project, task_id, "CALL_RESERVED_" + str(call_id))
+            self.event(project, task_id, "CALL_RESERVED_" + str(call_id))
             return call_id
 
     def event(self, project, task, kind):
         self.db.execute("INSERT OR IGNORE INTO events(project_id,task_id,kind,created) VALUES(?,?,?,?)",
                         (project, task, kind, time.time()))
 
-    def submit(self, spec, key):
+    def submit(self, spec, key, planning_id=None):
         if not isinstance(key, str) or not key or len(key) > 200:
             raise ValueError("Idempotency key must have 1..200 characters")
         if not isinstance(spec.get("tasks"), list) or not 1 <= len(spec["tasks"]) <= 100:
@@ -299,11 +311,12 @@ class Controller:
         if len(encode(spec).encode("utf-8")) > MAX_TOTAL:
             raise ValueError("Project specification too large")
         sh = digest(spec)
-        with self.db:
+        with self.immediate():
             old = self.db.execute("SELECT * FROM projects WHERE request_key=?", (key,)).fetchone()
             if old:
                 if old["spec_hash"] != sh:
                     raise ValueError("Idempotency key conflicts with different specification")
+                self.attach_planning_calls(old["id"], planning_id)
                 return self.bounded({"project_id": old["id"], "spec_version": old["version"], "duplicate": True})
             pid = "p-" + uuid.uuid4().hex[:16]
             self.db.execute("INSERT INTO projects VALUES(?,?,?,?,?,?)", (pid, key, sh, encode(spec), 1, time.time()))
@@ -311,7 +324,23 @@ class Controller:
                 self.db.execute("INSERT INTO tasks(id,project_id,local_id,spec,spec_version,state) VALUES(?,?,?,?,?,?)",
                                 (pid + ":" + task["id"], pid, task["id"], encode(task), 1, "PENDING"))
             self.event(pid, pid, "PROJECT_SUBMITTED")
+            self.attach_planning_calls(pid, planning_id)
         return self.bounded({"project_id": pid, "spec_version": 1, "duplicate": False})
+
+    def attach_planning_calls(self, project, planning_id):
+        # Called only within submit's writer transaction, before PENDING tasks become visible.
+        if planning_id is None:
+            return
+        if not self.db.in_transaction or not re.fullmatch(r"planning-[0-9a-f]{16}", planning_id):
+            raise ValueError("Invalid planning reservation identity or transaction")
+        prefixes = (project + ":%", planning_id + ":%")
+        used = self.db.execute("SELECT COUNT(*) FROM calls WHERE task_id LIKE ? OR task_id LIKE ?", prefixes).fetchone()[0]
+        masters = self.db.execute("SELECT COUNT(*) FROM calls WHERE (task_id LIKE ? OR task_id LIKE ?) AND role='master'", prefixes).fetchone()[0]
+        if used > self.config.get("max_project_turns", 60) or masters > self.config.get("max_master_turns", 4):
+            raise RuntimeError("BUDGET_EXHAUSTED: planning reservations cannot be attached within project budget")
+        self.db.execute("UPDATE calls SET task_id=? WHERE task_id=?", (project + ":planning", planning_id + ":planning"))
+        self.db.execute("UPDATE events SET project_id=?,task_id=? WHERE project_id=? AND task_id=?",
+            (project, project + ":planning", planning_id, planning_id + ":planning"))
 
     def task_dir(self, task):
         return self.data / "projects" / task["project_id"] / task["local_id"] / str(task["attempt"])
@@ -463,7 +492,7 @@ class Controller:
                     required_reads.add("independent-sources.json")
                 if not required_reads <= {r["path"] for r in reads}:
                     raise ValueError("Native reviewer did not read all required evidence")
-        with self.db:
+        with self.immediate():
             self.db.execute("UPDATE calls SET completed=?,usage=? WHERE id=?",
                             (time.time(), encode(result.get("usage")), call_id))
         atomic_json(directory / (role + "-result-call-" + str(call_id) + ".json"), result)
@@ -496,6 +525,7 @@ class Controller:
             if expected is None:
                 return
             while not done.wait(5):
+                conn.execute("BEGIN IMMEDIATE")
                 with conn:
                     now = time.time()
                     changed = conn.execute("UPDATE tasks SET lease_until=? WHERE id=? AND owner=? AND attempt=? "
@@ -612,6 +642,9 @@ class Controller:
         if any(proof.get(k) != v for k, v in binding.items()):
             raise EvidenceChangedError("Acceptance proof binding changed")
         directory = self.task_dir(task)
+        for key, filename in (("check_ref", "checks.json"), ("review_ref", "review.json")):
+            if not isinstance(task[key], str) or Path(task[key]).resolve() != (directory / filename).resolve():
+                raise EvidenceChangedError("Accepted database evidence reference changed: " + key)
         if json.loads((directory / "acceptance.json").read_text(encoding="utf-8")) != proof:
             raise EvidenceChangedError("Acceptance proof file changed")
         required = {"spec.json", "checks.json", "manifest.json", "review-input.json", "review.json", "review-read-receipts.json"}
@@ -658,7 +691,7 @@ class Controller:
                                         (task["project_id"], dep)).fetchone()
                 prior_directory = self.task_dir(prior)
                 prior_proof = self.verify_accepted(prior)
-                prior_review = json.loads(Path(prior["review_ref"]).read_text(encoding="utf-8"))
+                prior_review = json.loads((prior_directory / "review.json").read_text(encoding="utf-8"))
                 actual_manifest = manifest(prior_directory / "artifacts")
                 if prior["state"] != "ACCEPTED" or actual_manifest["hash"] != prior["manifest_hash"] or prior_review["verdict"] != "PASS":
                     raise ValueError("Accepted predecessor evidence has changed")
@@ -765,7 +798,7 @@ class Controller:
         except Exception as e:
             error = classify_error(e)
             atomic_json(directory / "error.json", {"class": error, "detail": str(e)[:1000]})
-            with self.db:
+            with self.immediate():
                 self.decision(task, error, owned=True)
         finally:
             done.set()
@@ -777,7 +810,7 @@ class Controller:
         raw = encode(obj).encode("utf-8")
         if len(raw) > MAX_REPLY:
             raise ValueError("Response budget exceeded; caller must paginate")
-        with self.db:
+        with self.immediate():
             self.db.execute("INSERT INTO reply_audit(kind,bytes,sha256,created) VALUES(?,?,?,?)",
                             (kind, len(raw), digest(raw), time.time()))
         return obj
@@ -984,7 +1017,7 @@ def classify_error(error):
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--data", default=str(ROOT / "data"))
+    parser.add_argument("--data", required=True, help="Explicit new/current-format directory; legacy databases are never auto-migrated")
     parser.add_argument("--config")
     sub = parser.add_subparsers(dest="command", required=True)
     submit = sub.add_parser("submit")

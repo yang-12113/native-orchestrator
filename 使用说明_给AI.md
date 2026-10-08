@@ -1,6 +1,6 @@
 # 接手 AI 操作说明
 
-日期：2026-10-06，Asia/Shanghai。适用本机，项目根目录 `E:\零碎\native-orchestrator`。读完本文件即可操作现有系统；无需从交接全文、开发历史或 worker 日志开始。
+更新日期：2026-10-08，Asia/Shanghai，v0.2.1。项目根目录 `E:\零碎\native-orchestrator`。新任务必须显式使用 data-v021 等新格式目录；旧 data-live 只读保留，旧 schema 在迁移或调度写入前拒绝。复制旧库不绕过门禁，完整迁移仍待实现。控制器使用宿主启动，MXC 内嵌套 CLI 尚未通过，见 HARDENING_VALIDATION.md。
 
 ## 先确认用户意图
 
@@ -16,11 +16,11 @@
 
 原纯 Codex 订阅配置为 config.codex.json。现有授权允许这条订阅通道；选用时说明实际额度来源，使用同一配置启动规划、执行和后台。不要因为模型名称相同而接入另一个 API/代理。
 
-ZCode 已确认有效登录与当前 Flash 授权，但独立生成持续返回 `request has been blocked due to unusual activity.`。不要重复探测、声称缺少登录/权益、绕过安全验证或把该路线标为可用。残余问题见 BLOCKERS.md。当前 Codex 原生协议已验证版本为 0.160.0/0.160.1；新版本必须核对并验证接口，不能直接删除版本检查。
+ZCode 已确认有效登录与当前 Flash 授权，但独立生成持续返回 `request has been blocked due to unusual activity.`。不要重复探测、声称缺少登录/权益、绕过安全验证或把该路线标为可用。残余问题见 BLOCKERS.md。当前 Codex 原生协议核对了 0.160.0/0.160.1 和 0.162.0-alpha.2；新版本必须核对并验证接口，不能直接删除版本检查。
 
 执行者仅提出新文本工件，由控制器限定落盘。支持 text/Markdown/JSON/CSV；现有仓库修改、任意 shell/build、复杂二进制文档、跨设备或 GUI 注册尚未实现。超范围任务先明确指出具体缺口，不把它伪装成“已经提交就能完成”。
 
-2026-10-07 补充：先核对任务类型、绝对输入/项目路径和请求模型参数。当前 codex_adapter.py 将思考档固定为 low，不能通过该适配器兑现 max；高校岗位业务正在使用的两个内置子代理实际都是 Luna/max，不受这条代码路径影响。采用已授权的外部子代理方式时，明确记录运行方式及其保证边界，不能把它标为本控制器管理或继承8KiB/只读权限/恢复测试结论。v0.3 工程设计见 `项目计划优化_2026-10-07.md`；其中的新接口和JSON草案尚不可派发。
+2026-10-08 补充：核对任务类型、绝对输入/项目路径和模型参数。Codex 路由已支持 reasoning_effort，并验证目录、thread 实际档位和 turn 下传值，支持已核对版本0.162.0-alpha.2；不允许静默降档。已完成的高校岗位项目使用内置 Luna/max，不迁移或重跑。外部工程协作需注明边界，v0.3 工程运行时和 JSON 草案仍不可派发。
 
 ## 每次新任务的标准流程
 
@@ -38,7 +38,7 @@ ZCode 已确认有效登录与当前 Flash 授权，但独立生成持续返回 
 用文件工具写入 UTF-8 任务文本，例如 `E:\零碎\native-orchestrator\requests\task-001.txt`。内容包含目标、事实输入、文件名、顺序/计数等验收条件。初始入口上限 6500 UTF-8 bytes；不要默默截断。超过上限改用 JSON 任务规范。
 
 ```powershell
-& 'E:\零碎\native-orchestrator\Run-Request.ps1' -RequestFile 'E:\零碎\native-orchestrator\requests\task-001.txt' -RequestId 'task-001-v1'
+& 'E:\零碎\native-orchestrator\Run-Request.ps1' -RequestFile 'E:\零碎\native-orchestrator\requests\task-001.txt' -RequestId 'task-001-v1' -Data 'E:\零碎\native-orchestrator\data-v021'
 ```
 
 捕获第一条成功 JSON 中的 project_id。`duplicate:true` 是同 ID/同内容复用；同 ID 不同内容会拒绝。前台 `stopped:true` 只表示该命令退出，后台可能已接手，不能当作验收通过。
@@ -46,8 +46,8 @@ ZCode 已确认有效登录与当前 Flash 授权，但独立生成持续返回 
 若显式选 config.codex.json，不要只改执行端，应该分别调用同配置的 master 和 controller：
 
 ```powershell
-python 'E:\零碎\native-orchestrator\master.py' --data 'E:\零碎\native-orchestrator\data-live' --config 'E:\零碎\native-orchestrator\config.codex.json' plan 'E:\零碎\native-orchestrator\requests\task-001.txt' --key 'task-001-v1'
-python 'E:\零碎\native-orchestrator\orchestrator.py' --data 'E:\零碎\native-orchestrator\data-live' --config 'E:\零碎\native-orchestrator\config.codex.json' run --idle-exit
+python 'E:\零碎\native-orchestrator\master.py' --data 'E:\零碎\native-orchestrator\data-v021' --config 'E:\零碎\native-orchestrator\config.codex.json' plan 'E:\零碎\native-orchestrator\requests\task-001.txt' --key 'task-001-v1'
+python 'E:\零碎\native-orchestrator\orchestrator.py' --data 'E:\零碎\native-orchestrator\data-v021' --config 'E:\零碎\native-orchestrator\config.codex.json' run --idle-exit
 ```
 
 如果已有后台加载另一配置，不得让两个配置同时抢同一队列；先确认活跃任务与停止意图，再按授权范围切换本项目调度器。原软件和全局设置保持不动。
@@ -77,8 +77,8 @@ python 'E:\零碎\native-orchestrator\orchestrator.py' --data 'E:\零碎\native-
 ```
 
 ```powershell
-python 'E:\零碎\native-orchestrator\orchestrator.py' --data 'E:\零碎\native-orchestrator\data-live' --config 'E:\零碎\native-orchestrator\config.live.json' submit 'E:\零碎\native-orchestrator\requests\task-001.project.json' --key 'task-001-v1'
-python 'E:\零碎\native-orchestrator\orchestrator.py' --data 'E:\零碎\native-orchestrator\data-live' --config 'E:\零碎\native-orchestrator\config.live.json' run --idle-exit
+python 'E:\零碎\native-orchestrator\orchestrator.py' --data 'E:\零碎\native-orchestrator\data-v021' --config 'E:\零碎\native-orchestrator\config.live.json' submit 'E:\零碎\native-orchestrator\requests\task-001.project.json' --key 'task-001-v1'
+python 'E:\零碎\native-orchestrator\orchestrator.py' --data 'E:\零碎\native-orchestrator\data-v021' --config 'E:\零碎\native-orchestrator\config.live.json' run --idle-exit
 ```
 
 后台已运行时第二行只是一个可退出的推进进程；事务租约防止同任务重复认领。最简单做法是提交后直接等待既有后台。
@@ -96,7 +96,7 @@ python 'E:\零碎\native-orchestrator\orchestrator.py' --data 'E:\零碎\native-
 普通程序等待，不消费模型调用；将下列 p-… 替换成真实返回 ID：
 
 ```powershell
-python 'E:\零碎\native-orchestrator\watch_project.py' 'p-xxxxxxxxxxxxxxxx' --data 'E:\零碎\native-orchestrator\data-live' --await-master --timeout 900
+python 'E:\零碎\native-orchestrator\watch_project.py' 'p-xxxxxxxxxxxxxxxx' --data 'E:\零碎\native-orchestrator\data-v021' --await-master --timeout 900
 ```
 
 退出码 0 表示 ACCEPTED；2 表示决策/取消/主脑回报受阻；3 只是等待超时，未取消任务。可用 --once 获取只读快照。此程序不创建数据库、不改变任务、不调用模型。
@@ -104,9 +104,9 @@ python 'E:\零碎\native-orchestrator\watch_project.py' 'p-xxxxxxxxxxxxxxxx' --d
 其他有界接口：
 
 ```powershell
-python 'E:\零碎\native-orchestrator\orchestrator.py' --data 'E:\零碎\native-orchestrator\data-live' status 'p-xxxxxxxxxxxxxxxx'
-python 'E:\零碎\native-orchestrator\orchestrator.py' --data 'E:\零碎\native-orchestrator\data-live' delta 'p-xxxxxxxxxxxxxxxx' --cursor 0
-python 'E:\零碎\native-orchestrator\orchestrator.py' --data 'E:\零碎\native-orchestrator\data-live' resume 'p-xxxxxxxxxxxxxxxx'
+python 'E:\零碎\native-orchestrator\orchestrator.py' --data 'E:\零碎\native-orchestrator\data-v021' status 'p-xxxxxxxxxxxxxxxx'
+python 'E:\零碎\native-orchestrator\orchestrator.py' --data 'E:\零碎\native-orchestrator\data-v021' delta 'p-xxxxxxxxxxxxxxxx' --cursor 0
+python 'E:\零碎\native-orchestrator\orchestrator.py' --data 'E:\零碎\native-orchestrator\data-v021' resume 'p-xxxxxxxxxxxxxxxx'
 ```
 
 status/delta/resume 属于控制面，会记本地回报审计；resume 会复核成果与导出状态。真正只读的检查使用 watcher --once。
@@ -124,7 +124,7 @@ NEEDS_DECISION 时先读取返回的 decision ID/reason，及必要的小型 err
 能够在已授权范围修复、且有明确对账依据时：
 
 ```powershell
-python 'E:\零碎\native-orchestrator\orchestrator.py' --data 'E:\零碎\native-orchestrator\data-live' resolve '<真实decision_id>' retry
+python 'E:\零碎\native-orchestrator\orchestrator.py' --data 'E:\零碎\native-orchestrator\data-v021' resolve '<真实decision_id>' retry
 ```
 
 cancel 只在用户取消/相应授权范围内使用。SERVICE_GUARD 不绕过验证；ENTITLEMENT_EXPIRED 不切新付费 API；QUOTA 保留真实额度问题；NATIVE_VERSION_CHANGED 核对新 schema 和权限行为；预算超限升级给用户。
@@ -133,11 +133,11 @@ cancel 只在用户取消/相应授权范围内使用。SERVICE_GUARD 不绕过�
 
 ## 管理本项目后台
 
-先读 data-live/service.json，检查相同 PID、启动时间与脚本归属。记录可能陈旧，不能仅凭 PID 去强杀。
+先读 data-v021/service.json，检查相同 PID、启动时间与脚本归属。记录可能陈旧，不能仅凭 PID 去强杀。
 
 ```powershell
-& 'E:\零碎\native-orchestrator\Start.ps1'
-& 'E:\零碎\native-orchestrator\Stop.ps1'
+& 'E:\零碎\native-orchestrator\Start.ps1' -Data 'E:\零碎\native-orchestrator\data-v021'
+& 'E:\零碎\native-orchestrator\Stop.ps1' -Data 'E:\零碎\native-orchestrator\data-v021'
 ```
 
 已有活进程则不再 Start。stop.request 是持久停止意图；仅在用户明确要求恢复/新执行且此意图已撤销时，移除本 data 目录这个标记再 Start，不动其他文件。关机不继续计算，未安装开机服务。

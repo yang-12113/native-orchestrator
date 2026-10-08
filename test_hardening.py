@@ -597,6 +597,185 @@ class HardeningTests(unittest.TestCase):
                 notice = c.db.execute("SELECT state FROM master_notices WHERE project_id=?", (project,)).fetchone()
                 self.assertEqual(notice["state"], "BUDGET_EXHAUSTED")
 
+    def test_reentrant_submit_and_bounded_rollback_with_outer_transaction(self):
+        c = self.controller("nested-rollback", MOCK_CONFIG)
+        with self.assertRaisesRegex(RuntimeError, "abort outer transaction"):
+            with c.immediate():
+                self._create_project(c, _single_task(), "nested-submit")
+                c.bounded({"probe": "nested"}, "nested_transaction_probe")
+                raise RuntimeError("abort outer transaction")
+        for table in ("projects", "tasks", "events", "reply_audit", "calls"):
+            self.assertEqual(c.db.execute("SELECT COUNT(*) FROM " + table).fetchone()[0], 0, table)
+
+    def test_concurrent_notify_for_same_decision_dispatches_once(self):
+        config = {**MOCK_CONFIG, "master": {"client": "codex", "model": "gpt-6.1-sol"}}
+        seed = self.controller("notify-race", config)
+        project = self._create_project(seed, _single_task(task_id="blocked"), "notify-race")
+        task = seed.db.execute("SELECT * FROM tasks WHERE project_id=?", (project,)).fetchone()
+        with seed.db:
+            seed.decision(task, "SYNTHETIC_BLOCK")
+        seed.db.close()
+
+        start = threading.Barrier(2)
+        init_lock = threading.Lock()
+        results, errors = [], []
+
+        def notify_worker():
+            controller = None
+            try:
+                with init_lock:
+                    controller = Controller(self.root / "notify-race", config)
+                start.wait(timeout=10)  # Both notifications start together, before either writer transaction.
+                results.append(notify_master(controller, project))
+            except Exception as error:
+                errors.append(repr(error))
+            finally:
+                if controller is not None:
+                    controller.db.close()
+
+        threads = [threading.Thread(target=notify_worker), threading.Thread(target=notify_worker)]
+        for thread in threads:
+            thread.start()
+        for thread in threads:
+            thread.join(20)
+        self.assertTrue(all(not thread.is_alive() for thread in threads))
+        self.assertEqual(errors, [])
+        self.assertEqual(sum(result is not None for result in results), 1)
+        self.assertEqual(sum(result is None for result in results), 1)
+        self.assertEqual([call["role"] for call in FAKE_CALLS].count("master"), 1)
+
+        observer = self.controller("notify-race", config)
+        self.assertEqual(observer.db.execute(
+            "SELECT COUNT(*) FROM calls WHERE task_id=? AND role='master'", (project + ":master",)
+        ).fetchone()[0], 1)
+        notices = observer.db.execute("SELECT state,COUNT(*) n FROM master_notices WHERE project_id=? GROUP BY state", (project,)).fetchall()
+        self.assertEqual(sum(row["n"] for row in notices), 1)
+        self.assertEqual(notices[0]["state"], "COMPLETED")
+
+    def test_accepted_database_refs_must_match_fixed_proof_paths(self):
+        spec = {"title": "dependency refs", "tasks": [
+            {"id": "source", "objective": "verified source", "artifacts": ["source.txt"],
+             "checks": [{"kind": "text", "path": "source.txt", "equals": "ok"}]},
+            {"id": "child", "objective": "consume source", "artifacts": ["child.txt"], "depends_on": ["source"],
+             "checks": [{"kind": "text", "path": "child.txt", "equals": "ok"}]},
+        ]}
+        for index, column in enumerate(("check_ref", "review_ref")):
+            with self.subTest(damaged_pointer=column):
+                c = self.controller("fixed-ref-" + str(index), FAKE_CODEX_CONFIG)
+                project = self._create_project(c, spec, "fixed-ref-" + str(index))
+                c.run_one()
+                task = c.db.execute("SELECT * FROM tasks WHERE project_id=? AND local_id='source'", (project,)).fetchone()
+                self.assertEqual(task["state"], "ACCEPTED")
+                forged = c.data / ("forged-" + column + ".json")
+                if column == "check_ref":
+                    forged.write_text(encode({"passed": True, "checks": []}), encoding="utf-8")
+                else:
+                    forged.write_text(encode({"verdict": "PASS", "findings": []}), encoding="utf-8")
+                with c.db:
+                    c.db.execute("UPDATE tasks SET " + column + "=? WHERE id=?", (str(forged), task["id"]))
+                current = c.db.execute("SELECT * FROM tasks WHERE id=?", (task["id"],)).fetchone()
+                with self.assertRaises(ValueError):
+                    c.verify_accepted(current)
+
+                if column == "review_ref":
+                    before = len(FAKE_CALLS)
+                    original_read_text = Path.read_text
+
+                    def refuse_forged_path(path, *args, **kwargs):
+                        if path.resolve() == forged.resolve():
+                            raise AssertionError("dependency must not consume the DB-supplied review_ref")
+                        return original_read_text(path, *args, **kwargs)
+
+                    with patch.object(Path, "read_text", new=refuse_forged_path):
+                        c.run_one()
+                    states = {row["local_id"]: row["state"] for row in c.db.execute(
+                        "SELECT local_id,state FROM tasks WHERE project_id=?", (project,))}
+                    self.assertNotEqual(states["source"], "ACCEPTED")
+                    self.assertNotEqual(states["child"], "ACCEPTED")
+                    self.assertEqual(len(FAKE_CALLS), before)
+
+    def test_legacy_database_preflight_is_read_only_and_preserves_accepted_state(self):
+        data = self.root / "legacy-data"
+        data.mkdir()
+        database = data / "state.sqlite"
+        connection = sqlite3.connect(database)
+        try:
+            connection.execute("CREATE TABLE tasks(id TEXT PRIMARY KEY, project_id TEXT, local_id TEXT, spec TEXT, "
+                               "spec_version INTEGER, state TEXT, attempt INTEGER, manifest_hash TEXT, check_ref TEXT, review_ref TEXT)")
+            connection.execute("INSERT INTO tasks VALUES(?,?,?,?,?,?,?,?,?,?)",
+                               ("legacy:persisted", "legacy", "persisted", "{}", 1, "ACCEPTED", 1, "old-manifest", "old-checks", "old-review"))
+            connection.commit()
+        finally:
+            connection.close()
+        before_bytes = database.read_bytes()
+        observer = sqlite3.connect("file:" + str(database) + "?mode=ro", uri=True)
+        before_columns = tuple(row[1] for row in observer.execute("PRAGMA table_info(tasks)"))
+        before_state = observer.execute("SELECT state FROM tasks WHERE id='legacy:persisted'").fetchone()[0]
+        observer.close()
+        with self.assertRaisesRegex(ValueError, "LEGACY_DATA_REQUIRES_EXPLICIT_MIGRATION"):
+            Controller.assert_current_database(data)
+        self.assertEqual(database.read_bytes(), before_bytes)
+        observer = sqlite3.connect("file:" + str(database) + "?mode=ro", uri=True)
+        after_columns = tuple(row[1] for row in observer.execute("PRAGMA table_info(tasks)"))
+        after_state = observer.execute("SELECT state FROM tasks WHERE id='legacy:persisted'").fetchone()[0]
+        observer.close()
+        self.assertEqual(after_columns, before_columns)
+        self.assertEqual(after_state, before_state)
+        self.assertEqual(after_state, "ACCEPTED")
+
+    def test_planning_attach_failure_rolls_back_project_and_success_counts_against_budgets(self):
+        spec = _single_task(task_id="planned")
+        invalid = self.controller("planning-failure", MOCK_CONFIG)
+        with self.assertRaisesRegex(ValueError, "planning reservation identity"):
+            invalid.submit(spec, "bad-planning-link", planning_id="planning-invalid")
+        for table in ("projects", "tasks"):
+            self.assertEqual(invalid.db.execute("SELECT COUNT(*) FROM " + table).fetchone()[0], 0, table)
+        self.assertEqual(invalid.db.execute("SELECT COUNT(*) FROM events").fetchone()[0], 0)
+
+        planning_id = "planning-" + "a" * 16
+        project_cap = self.controller("planning-project-budget", {**MOCK_CONFIG, "max_project_turns": 1})
+        project_cap.reserve_call(planning_id, planning_id + ":planning", "master", "gpt-6.1-sol")
+        project = project_cap.submit(spec, "planning-project-budget", planning_id=planning_id)["project_id"]
+        attached = project_cap.db.execute("SELECT task_id,role FROM calls WHERE task_id LIKE ?", (project + ":%",)).fetchall()
+        self.assertEqual([tuple(row) for row in attached], [(project + ":planning", "master")])
+        transferred_event = project_cap.db.execute("SELECT project_id,task_id FROM events WHERE kind LIKE 'CALL_RESERVED_%'").fetchone()
+        self.assertEqual(tuple(transferred_event), (project, project + ":planning"))
+        task = project_cap.claim()
+        with self.assertRaisesRegex(RuntimeError, "BUDGET_EXHAUSTED"):
+            project_cap.invoke(task, "executor", "must not dispatch", project_cap.data, ARTIFACT_SCHEMA)
+        self.assertFalse(any(call["role"] == "executor" for call in FAKE_CALLS))
+
+        master_id = "planning-" + "b" * 16
+        master_config = {**MOCK_CONFIG, "max_project_turns": 10, "max_master_turns": 1,
+                         "master": {"client": "codex", "model": "gpt-6.1-sol"}}
+        master_cap = self.controller("planning-master-budget", master_config)
+        master_cap.reserve_call(master_id, master_id + ":planning", "master", "gpt-6.1-sol")
+        master_project = master_cap.submit(spec, "planning-master-budget", planning_id=master_id)["project_id"]
+        blocked = master_cap.db.execute("SELECT * FROM tasks WHERE project_id=?", (master_project,)).fetchone()
+        with master_cap.db:
+            master_cap.decision(blocked, "SYNTHETIC_BLOCK")
+        result = notify_master(master_cap, master_project)
+        self.assertEqual(result["master_wakeup"], "BUDGET_EXHAUSTED")
+        self.assertFalse(any(call["role"] == "master" for call in FAKE_CALLS))
+        self.assertEqual(master_cap.db.execute("SELECT COUNT(*) FROM calls WHERE task_id=? AND role='master'",
+                                               (master_project + ":master",)).fetchone()[0], 0)
+
+    def test_master_call_reservation_invalidates_preexisting_pagination_version(self):
+        config = {**MOCK_CONFIG, "master": {"client": "codex", "model": "gpt-6.1-sol"}}
+        c = self.controller("master-version", config)
+        project = self._create_project(c, _single_task(task_id="blocked"), "master-version")
+        task = c.db.execute("SELECT * FROM tasks WHERE project_id=?", (project,)).fetchone()
+        with c.db:
+            c.decision(task, "SYNTHETIC_BLOCK")
+        before = c.resume_summary(project, limit=10)
+        result = notify_master(c, project)
+        after = c.resume_summary(project, limit=10)
+        self.assertIsNotNone(result)
+        self.assertGreater(after["state_version"], before["state_version"])
+        self.assertEqual(result["state_version"], after["state_version"])
+        with self.assertRaisesRegex(ValueError, "STALE_STATE_CURSOR"):
+            c.resume_summary(project, decision_cursor=0, limit=10, state_version=before["state_version"])
+
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)

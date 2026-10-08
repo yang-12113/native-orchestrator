@@ -1,6 +1,6 @@
 param([Parameter(Mandatory=$true)][string]$RequestFile,
       [Parameter(Mandatory=$true)][string]$RequestId,
-      [string]$Data = "$PSScriptRoot/data-live")
+      [Parameter(Mandatory=$true)][string]$Data)
 $ErrorActionPreference = 'Stop'
 $env:PYTHONIOENCODING = 'utf-8'
 & python (Join-Path $PSScriptRoot 'master.py') --data $Data plan $RequestFile --key $RequestId

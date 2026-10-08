@@ -8,7 +8,7 @@ Git 使用方式为：冻结基线 → TASK 票据 → 独立 worktree 修改 �
 
 ## 验证状态
 
-- Luna/max 首轮测试 40/40 通过，见 TASKS/FRAME-001-TEST-REPORT.md；均为 MOCK。
+- Luna/max 初始完整测试 47/47 通过，见 TASKS/FRAME-001-TEST-REPORT.md；均为 MOCK。独立审查随后拦下36f73b6的事务、依赖指针、规划预算归属和旧库门禁问题；修正后需再次冻结并验收。
 - 当前 Codex 0.162.0-alpha.2 已在独立目录导出 experimental JSON Schema，核对模型分页、effort、thread/turn、动态只读工具字段；指纹见 PROTOCOL_SUPPORT.json。未来原生版本仍需重新核对，未放宽为任意 0.162。
 - 最终候选的完整回归、独立复核和真实 Luna/max 文本自检尚待完成；结论与源代码提交将登记在 FRAME-001-ACCEPTANCE.json。
 
@@ -18,6 +18,8 @@ Git 使用方式为：冻结基线 → TASK 票据 → 独立 worktree 修改 �
 
 整体仍为 PARTIAL。v0.3 的受限工程执行、实际工程只读隔离、批准检查命令、Git/SQLite/CURRENT promotion/reconcile、完整通知送达确认、累计业务字节预算和代表性工程验收尚未实现。替身测试与原生文本自检不证明这些能力。
 
-旧 v0.2 ACCEPTED 缺少本次完整 proof，不能自动升级为新验收。不要直接用新版 run/resume 审计正式 data-live：应先复制所需旧状态到独立迁移目录，再显式对账；否则完整审计会将无法验证的旧接纳标为 NEEDS_DECISION。旧工件与历史验收保留，不能补写一个新 PASS 来掩盖缺证。
+旧 v0.2 ACCEPTED 缺少本次完整 proof，不能自动升级为新验收。新版在数据库写入、WAL/迁移操作之前只读检查 schema；旧格式直接拒绝。CLI、MCP、主脑和启动脚本要求显式数据目录；Start 的门禁在日志与 PID 写入之前。watch_project.py 可只读查看旧历史；复制旧目录不绕过门禁，完整迁移/重新验收仍需另行实现。本轮旧工件和历史验收保留，不补写新 PASS。
+
+MXC 对照：工具沙箱内启动嵌套 Codex app-server 时，私有 CODEX_HOME canonicalize 返回 os error5，initialize 前退出且未调用模型。宿主启动相同候选的两角色文本自检已通过；这两种启动环境分别记录，宿主成功不表示嵌套 MXC 已通过。后台兼容性由单独沙箱交接提示词承接。
 
 代码回退使用 Git revert 或从 baseline-v0.2 创建独立恢复 worktree；不自动降级数据库或清除测试/故障证据。本轮正式数据未迁移，因此源码回退不需要撤销正式数据变更。

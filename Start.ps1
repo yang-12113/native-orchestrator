@@ -1,6 +1,8 @@
-param([string]$Data = "$PSScriptRoot/data-live", [string]$Config = "$PSScriptRoot/config.live.json")
+param([Parameter(Mandatory=$true)][string]$Data, [string]$Config = "$PSScriptRoot/config.live.json")
 $ErrorActionPreference = 'Stop'
 $controllerPath = Join-Path $PSScriptRoot 'orchestrator.py'
+& python -B -c "import sys; from pathlib import Path; sys.path.insert(0,sys.argv[1]); from orchestrator import Controller; Controller.assert_current_database(Path(sys.argv[2]))" $PSScriptRoot $Data
+if ($LASTEXITCODE -ne 0) { throw 'Legacy or unreadable database refused; no service logs or state were changed.' }
 New-Item -ItemType Directory -Force -Path $Data | Out-Null
 if (Test-Path -LiteralPath (Join-Path $Data 'stop.request')) { throw 'stop.request exists. Remove this one marker explicitly to resume.' }
 $pythonPath = (Get-Command python).Source

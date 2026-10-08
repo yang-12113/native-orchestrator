@@ -40,7 +40,7 @@ def dispatch(c, name, args):
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--data", default=str(ROOT / "data-live"))
+    parser.add_argument("--data", required=True, help="Explicit new/current-format directory")
     parser.add_argument("--config", default=str(ROOT / "config.live.json"))
     args = parser.parse_args()
     controller = Controller(args.data, json.loads(Path(args.config).read_text(encoding="utf-8")))

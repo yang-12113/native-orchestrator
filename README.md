@@ -2,7 +2,7 @@
 
 2026-10-08 底座修复及验收见 [HARDENING_VALIDATION.md](E:/零碎/native-orchestrator/HARDENING_VALIDATION.md)。状态/决策分页、过期尝试隔离、事务预算、完整证据校验、决策通知与思考档下传已实施；v0.3 工程能力和权限关卡仍待实现，见 [优化计划](E:/零碎/native-orchestrator/项目计划优化_2026-10-07.md)。
 
-旧 data-live 和 ACCEPTANCE.json 是 v0.2 历史证据，未迁移或重跑。先按验收文档复制旧状态并对账，再决定启用新版；不能把旧 ACCEPTED 当作已经具备新 proof。
+旧 data-live 和 ACCEPTANCE.json 是 v0.2 历史证据，未迁移或重跑。新版在写入前拒绝旧 schema，自动迁移已禁用；旧记录只读查看使用 watch_project.py。完整迁移需另行实现和明确对账，复制目录本身不会将旧 ACCEPTED 升级为新 proof。
 
 快速入门：[给用户看的使用说明](/E:/零碎/native-orchestrator/使用说明_给用户.md)；让其他 AI 接手：[给 AI 的操作说明](/E:/零碎/native-orchestrator/使用说明_给AI.md)。等待验收使用 watch_project.py，提交命令退出不等于成果已验收。
 
@@ -15,7 +15,7 @@
 把任务写入 UTF-8 文本文件（初始规划入口限 6500 bytes；更长项目用明确的 JSON 任务规范）。在 PowerShell 运行：
 
 ```powershell
-& 'E:\零碎\native-orchestrator\Run-Request.ps1' -RequestFile 'E:\零碎\native-orchestrator\request.example.txt' -RequestId 'your-unique-request-id'
+& 'E:\零碎\native-orchestrator\Run-Request.ps1' -Data 'E:\零碎\native-orchestrator\data-v021' -RequestFile 'E:\零碎\native-orchestrator\request.example.txt' -RequestId 'your-unique-request-id'
 ```
 
 已知同一 RequestId 重试会复用计划和项目；不同内容复用同一 ID 会拒绝。规划候选先校验；格式问题最多修复一次，再失败不派发。每个任务自动有独立监察，不用再单建监察任务。
@@ -23,20 +23,23 @@
 ## 查看、后台、停止和恢复
 
 ```powershell
-python 'E:\零碎\native-orchestrator\orchestrator.py' --data 'E:\零碎\native-orchestrator\data-live' status p-52d8213273204455
-python 'E:\零碎\native-orchestrator\orchestrator.py' --data 'E:\零碎\native-orchestrator\data-live' delta p-52d8213273204455 --cursor 0
-python 'E:\零碎\native-orchestrator\orchestrator.py' --data 'E:\零碎\native-orchestrator\data-live' resume p-52d8213273204455
-& 'E:\零碎\native-orchestrator\Start.ps1'
-& 'E:\零碎\native-orchestrator\Stop.ps1'
+$Project = '填写在 data-v021 提交返回的 project_id'
+python 'E:\零碎\native-orchestrator\orchestrator.py' --data 'E:\零碎\native-orchestrator\data-v021' status $Project
+python 'E:\零碎\native-orchestrator\orchestrator.py' --data 'E:\零碎\native-orchestrator\data-v021' delta $Project --cursor 0
+python 'E:\零碎\native-orchestrator\orchestrator.py' --data 'E:\零碎\native-orchestrator\data-v021' resume $Project
+& 'E:\零碎\native-orchestrator\Start.ps1' -Data 'E:\零碎\native-orchestrator\data-v021'
+& 'E:\零碎\native-orchestrator\Stop.ps1' -Data 'E:\零碎\native-orchestrator\data-v021'
+# 查看旧结果：这个 watcher 不迁移或审计写回旧库
+python 'E:\零碎\native-orchestrator\watch_project.py' --data 'E:\零碎\native-orchestrator\data-live' p-52d8213273204455 --once
 ```
 
-Start 创建隐藏的普通后台进程，PID 在 `data-live/service.json`，退出信息在两个 service 日志里。Stop 写持久 stop.request；活跃回合有超时上限，结束后停止。恢复时，确认停止意图已撤销，仅移除该目录内 `stop.request`，再 Start。没有安装开机任务；关机/休眠时不能继续计算。
+所有入口要求显式数据目录。Start 先检查 schema，再创建隐藏的普通后台进程；PID 在指定目录的 service.json，退出信息在该目录的 service 日志里。Stop 写持久 stop.request，活跃回合结束后停止。确认停止意图已撤销后，仅移除该目录内 stop.request，再 Start。没有安装开机任务，关机/休眠期间不计算。控制器从宿主终端启动；当前 MXC 工具内嵌套 Codex CLI 在读取私有 CODEX_HOME 时失败，见 HARDENING_VALIDATION.md。
 
 崩溃租约到期后的不确定派发进入 NEEDS_DECISION，保留工件、原生 ID 与错误记录。先对账，不自动重复未知副作用；可用 `resolve '<decision_id>' retry` 或 `cancel`，重试仍受既有预算限制。每个任务最多 3 次总尝试，项目默认 60 个原生回合。原生会话为 ephemeral，故障恢复靠版本化状态及外部证据，不宣称能继续一个已销毁的原生会话。
 
 ## 实际成果
 
-最新默认免费执行端到端：`data-live/projects/p-3f0ae85006304647/create_verification/1/artifacts/verification.txt`，实际内容 WORKBUDDY_PIPELINE_OK。原纯 Codex 项目 p-52d8213273204455 仍保留，重复请求没有增加调用。
+历史 v0.2 默认免费执行端到端：`data-live/projects/p-3f0ae85006304647/create_verification/1/artifacts/verification.txt`，实际内容 WORKBUDDY_PIPELINE_OK。原纯 Codex 项目 p-52d8213273204455 仍保留，重复请求没有增加调用。
 
 两阶段 CSV：`data-live/projects/p-43e8ae53ca7b477f/csv-demo/2/artifacts/facts.csv`；后一阶段已通过独立监察。官网来源样例：`data-live/projects/p-88cc957c845e44b5/release-fact/2/artifacts/release.csv`；目录中有两次独立 HTTP 来源读取及监察回读凭证。
 
