@@ -274,6 +274,21 @@ class ExecutionContractPreflightTests(unittest.TestCase):
         contract["allowed_changes"] = ["Calculator.py", "calculator.py"]
         self._assert_rejected(contract=contract)
 
+    def test_parent_change_path_cannot_cover_a_protected_child(self) -> None:
+        contract = copy.deepcopy(self.contract)
+        contract["allowed_changes"] = ["src"]
+        policy = copy.deepcopy(self.policy)
+        policy["protected_paths"].append("src/private.json")
+        error = self._assert_rejected(contract=contract, policy=policy)
+        self.assertEqual(error.code, "PROTECTED_PATH")
+
+    def test_existing_directory_cannot_be_an_allowed_change_target(self) -> None:
+        (self.repo_root / "src").mkdir()
+        contract = copy.deepcopy(self.contract)
+        contract["allowed_changes"] = ["src"]
+        error = self._assert_rejected(contract=contract)
+        self.assertEqual(error.code, "INVALID_PATH")
+
     def test_symbolic_link_paths_are_rejected(self) -> None:
         link = self.repo_root / "linked.py"
         try:

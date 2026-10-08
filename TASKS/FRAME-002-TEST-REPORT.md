@@ -1,18 +1,17 @@
 # FRAME-002 测试报告
 
 task_id: FRAME-002  
-status: PASS_WITH_SYMLINK_ENV_SKIP  
-candidate_commit: 未采集（未执行 Git 操作）
+status: PASS_WITH_REAL_SYMLINK_SKIPPED  
+candidate_commit: 未采集（本次未执行 Git 操作）。按主代理说明，bda744b 是旧文本验收基线，FRAME-002 初版 75bd122 已被拦截，均不作为本次测试候选。
 
-facts/findings: 所有新增用例使用 worktree 内临时 fixture 与 fake repository_probe；不调用 Git 检查、模型、批准命令或数据库。契约预检始终断言 `dispatchable=False`。预算 worst-case 断言按 `2*(1+max_reworks)+planning_turns+notification_turns` 计算。
+facts/findings: 新增两个边界负例：`allowed_changes=["src"]` 覆盖受保护子路径 `src/private.json` 必须拒绝；已存在的目录 `src` 不能作为改动目标，必须返回 `INVALID_PATH`。两项均通过。所有预检用例使用 worktree 内临时 fixture 与 fake repository_probe；不调用 Git 探测、模型、批准命令或数据库。契约通过仍断言 `dispatchable=False`。
 
 checks:
 - 稳定前夹具运行：未运行，遵守等待实现稳定的要求。
-- 稳定后新增用例：17 项，16 passed、0 failures、0 errors、1 skipped。通过 `python -B -m unittest -q test_execution_contract`。唯一跳过项是创建真实 OS symlink 的测试，因为当前环境不允许创建；合成 link 判定用例通过，但不作为 OS 权限验证证据。
-- 原 5 模块基线：59 项，0 failures、0 errors，通过 `python -B run_tests.py` 的 disposable directory 运行；未调用旧测试 `__main__`。控制台出现 `Failed to find real location of E:\python\python.exe` 提示，但结果通过。
-- 主代理整合后的六模块入口：76项运行，75通过，0 failures/errors，1真实symlink环境跳过，报告 `.runtime/frame-002-unified-report.json`。原59项基线仅使用临时SQLite数据库，没有修改正式数据库。
-- 实际只读Git探测：正确读取原源码目录HEAD/tree并识别开发状态文档未提交导致clean=false；没有模型调用或工程命令执行，报告 `.runtime/frame-002-real-git-probe.json`。
+- 契约套件：19 项运行，18 passed、0 failures、0 errors、1 skipped。命令：`python -B -m unittest -q test_execution_contract`。
+- 六模块统一回归：78 项运行，77 passed、0 failures、0 errors、1 skipped。命令：`python -B run_tests.py --report .runtime/frame-002-unified-report.json`。JSON 报告含 `skipped: 1`、`native_model_calls: 0`、`formal_runtime_or_delivery_evidence_modified: false`。
+- 唯一跳过项仍是真实 OS symlink 创建，Windows 返回 WinError 1314（缺少创建符号链接权限）。合成 link 判定用例通过，但不视作真实系统权限验证。
 
-blockers: 真实 OS symlink 行为未在此环境验证；其余 FRAME-002 隔离测试和原 59 项基线通过。
+blockers: 真实 OS symlink 行为仍未验证；其余新增契约用例和六模块回归通过。
 
-evidence_refs: `test_execution_contract.py`; `.runtime/frame-002-tests/FRAME-002-BASELINE-REPORT.json`; `.runtime/frame-002-tests/FRAME-002-ISOLATION-REPORT.md`
+evidence_refs: `test_execution_contract.py`; `.runtime/frame-002-unified-report.json`; `.runtime/frame-002-tests/FRAME-002-ISOLATION-REPORT.md`

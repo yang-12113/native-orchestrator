@@ -166,7 +166,7 @@ def validate_contract(contract, policy, usage=None, repository_probe=inspect_git
         if folded in seen:
             raise ContractError("DUPLICATE_PATH", "Case-insensitive change path collision")
         seen.add(folded)
-        if any(folded == p or folded.startswith(p + "/") for p in forbidden):
+        if any(folded == p or folded.startswith(p + "/") or p.startswith(folded + "/") for p in forbidden):
             raise ContractError("PROTECTED_PATH", "Change path is protected controller or repository data")
         target = root.joinpath(*name.split("/"))
         if not target.resolve().is_relative_to(root):
@@ -174,6 +174,8 @@ def validate_contract(contract, policy, usage=None, repository_probe=inspect_git
         parts = (target, *target.parents)
         if any(p.is_symlink() or (hasattr(p, "is_junction") and p.is_junction()) for p in parts):
             raise ContractError("LINKED_PATH", "Change path traverses a link")
+        if target.exists() and not target.is_file():
+            raise ContractError("INVALID_PATH", "Approved changes must name files, never directory replacements")
     mapping(contract["routes"], {"executor", "reviewer"}, "routes")
     mapping(policy["routes"], {"executor", "reviewer"}, "policy routes")
     for role, caps in ROLE_CAPABILITIES.items():

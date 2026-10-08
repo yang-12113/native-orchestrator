@@ -1,6 +1,6 @@
 # FRAME-002：工程契约与派发预检
 
-状态：IN_PROGRESS，PLAN-R01已PASS。主责：主代理；Luna/max负例与测试，独立Luna只读验收。验收代码候选bda744b，发布基线b97788f，开发起点810e4b7（仅追加计划文档）。开发工作树E:\零碎\native-orchestrator-v03，分支codex/engineering-v03。
+状态：IN_PROGRESS，PLAN-R01已PASS。主责：主代理；Luna/max负例与测试，独立Luna只读验收。旧文本验收候选bda744b，发布基线b97788f，开发起点810e4b7（仅追加计划文档）。本票据首个代码候选75bd122被独审指出路径父子重叠问题，修复后另行冻结。开发工作树E:\零碎\native-orchestrator-v03，分支codex/engineering-v03。
 
 授权依据：用户把剩余自动化交给主代理，并要求固定主线、做计划和分配。范围限自动工程控制器，不增加校招业务功能、改全局设置/凭据或迁移正式旧库。运行码须在独立开发工作树实施；本次创建票据不等于工程能力已经启用。
 
