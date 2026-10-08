@@ -1,0 +1,15 @@
+{
+  "task_id": "PLAN-R01",
+  "reviewer": "luna_v03_plan_review",
+  "model": "gpt-6-luna",
+  "effort": "max",
+  "mode": "READ_ONLY",
+  "status": "PASS",
+  "initial_plan_commit": "13360a9",
+  "findings_resolved": ["明确实际验收代码bda744b与文档归档发布b97788f的绑定"],
+  "evidence_refs": ["TASKS/PLAN-BASELINE-BINDING.json", "FRAME-001-ACCEPTANCE.json"],
+  "summary": "四份交付文档差异与Git只读diff相符，六份运行源码无差异且SHA符合验收记录。计划/状态已区分候选和发布，未见阻断。",
+  "tests_run": false,
+  "native_calls": 0,
+  "runtime_modified": false
+}

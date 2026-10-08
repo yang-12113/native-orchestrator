@@ -1,0 +1,26 @@
+{
+  "status": "VERIFIED_SAME_RUNTIME_FILES",
+  "verified_on": "2026-10-08",
+  "code_candidate_commit": "bda744b4074309dcc02f67da5522f22a3d8942cb",
+  "release_commit": "b97788f0c7f3318874765c0fcd664d4bc05e80ed",
+  "release_tag": "controller-v0.2.1-verified",
+  "candidate_to_release_changed_files": [
+    "FRAME-001-ACCEPTANCE.json",
+    "GIT_实际使用说明.md",
+    "HARDENING_VALIDATION.md",
+    "TASKS/FRAME-001-REVIEW.md"
+  ],
+  "candidate_to_release_changes_are_delivery_documents_only": true,
+  "current_runtime_files_match_native_verified_candidate": true,
+  "runtime_file_sha256": {
+    "orchestrator.py": "8e9be3e73b908378daeba926f96f61b7b913c99f13dd279c764b728dd3b38a49",
+    "codex_adapter.py": "32b5e7055786cd94c7fafc49b85af5d03916b4e21dd11e93b0f9df4e1914ab26",
+    "native_rpc.py": "fee6d95b64f6262937736b244791d82e4ba89d3ef44b0d652dbf0e08a6ed3201",
+    "master.py": "3acd5254b0c895d93cd7fa958d005f2bbf1e850e50bc7b28f06cb7cff2be4adf",
+    "mcp_server.py": "9aaff1b2b98c921f765fb55f55fd30699c834f225c5857bfb0670ac14a0aa2b6",
+    "watch_project.py": "2c48a9640e5c5ba8a2fefc1c9f2c77c29b1a3d8ae947e5149c7ec43868473d7e"
+  },
+  "native_and_regression_evidence": "FRAME-001-ACCEPTANCE.json",
+  "native_calls_during_this_check": 0,
+  "runtime_or_formal_data_modified": false
+}

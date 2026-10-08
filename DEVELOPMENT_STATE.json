@@ -11,9 +11,9 @@
   "baseline_code_commit": "b97788f0c7f3318874765c0fcd664d4bc05e80ed",
   "baseline_tag": "controller-v0.2.1-verified",
   "baseline_regression_tests": 59,
-  "current_phase": "PLAN_REVIEW",
-  "current_task": "PLAN-R01",
-  "next_action": "计划独审通过后，冻结独立开发工作树和FRAME-002文件白名单，实施工程契约/派发预检。",
+  "current_phase": "FRAME_002_PREPARATION",
+  "current_task": "FRAME-002",
+  "next_action": "独立计划审查已PASS；建立隔离工程工作树，冻结契约API与测试白名单，再实施FRAME-002。",
   "code_worktree": null,
   "code_branch": null,
   "resume_files": [
@@ -39,13 +39,19 @@
       "status": "READONLY_INVENTORY_COMPLETE",
       "agent": "luna_v03_test_inventory",
       "evidence": "TASKS/PLAN-Q02-REPORT.json"
+    },
+    {
+      "id": "PLAN-R01",
+      "status": "PASS",
+      "agent": "luna_v03_plan_review",
+      "evidence": "TASKS/PLAN-R01-REPORT.json"
     }
   ],
   "tasks": [
     {
       "id": "PLAN-R01",
       "owner": "Luna independent reviewer",
-      "status": "READY",
+      "status": "PASS",
       "dependencies": [
         "PLAN-Q01",
         "PLAN-Q02"
@@ -57,7 +63,7 @@
       "owner": "root",
       "test_owner": "Luna/max",
       "review_owner": "independent Luna/max",
-      "status": "READY_AFTER_PLAN_REVIEW",
+      "status": "READY",
       "dependencies": [
         "PLAN-R01"
       ],
@@ -186,5 +192,8 @@
     ],
     "not_deadline": true,
     "not_background_execution_promise": true
-  }
+  },
+  "validated_code_candidate_commit": "bda744b4074309dcc02f67da5522f22a3d8942cb",
+  "baseline_binding_evidence": "TASKS/PLAN-BASELINE-BINDING.json",
+  "plan_candidate_commit": "13360a9"
 }
