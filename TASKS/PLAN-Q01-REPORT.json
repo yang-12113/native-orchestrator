@@ -1,0 +1,52 @@
+{
+  "task_id": "PLAN-Q01",
+  "agent": "luna_v03_interface_inventory",
+  "mode": "READ_ONLY",
+  "status": "COMPLETE",
+  "baseline_code_commit": "b97788f0c7f3318874765c0fcd664d4bc05e80ed",
+  "tests_run": false,
+  "runtime_modified": false,
+  "facts": [
+    {
+      "text": "submit/run_one为当前主链；CLI/MCP/master共用提交，仍拒绝repo_patch",
+      "refs": [
+        "orchestrator.py:267",
+        "orchestrator.py:730",
+        "master.py:145",
+        "mcp_server.py:23"
+      ]
+    },
+    {
+      "text": "可复用写事务、执行栅栏与预算；过期执行转为待对账",
+      "refs": [
+        "orchestrator.py:222",
+        "orchestrator.py:244",
+        "orchestrator.py:378"
+      ]
+    },
+    {
+      "text": "已有限定文本落盘、读哈希回执与完整proof复验；检查仅四类",
+      "refs": [
+        "orchestrator.py:98",
+        "orchestrator.py:544",
+        "orchestrator.py:611",
+        "orchestrator.py:645"
+      ]
+    },
+    {
+      "text": "Codex思考档下传已实现；当前角色适配器只读",
+      "refs": [
+        "codex_adapter.py:85",
+        "codex_adapter.py:97"
+      ]
+    }
+  ],
+  "suggestions": [
+    "契约接submit；工程流水线接run_one；检查与独审分模块；发布/恢复接Controller事务。建议需主代理设计，不是已实现能力。"
+  ],
+  "gaps": [
+    "工程契约未启用，批准检查目录为空",
+    "工程快照权限与promotion未实现"
+  ],
+  "context_used": "只给本票据和指定文件，fork_turns=none；无父聊天历史"
+}

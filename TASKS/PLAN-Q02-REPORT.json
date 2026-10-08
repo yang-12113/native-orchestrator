@@ -1,0 +1,46 @@
+{
+  "task_id": "PLAN-Q02",
+  "agent": "luna_v03_test_inventory",
+  "mode": "READ_ONLY",
+  "status": "COMPLETE",
+  "baseline_code_commit": "b97788f0c7f3318874765c0fcd664d4bc05e80ed",
+  "tests_run": false,
+  "runtime_modified": false,
+  "facts": [
+    {
+      "text": "隔离回归入口导入五模块，现有59项mock仅为原文本控制器证据",
+      "refs": [
+        "run_tests.py:17",
+        "FRAME-001-ACCEPTANCE.json"
+      ]
+    },
+    {
+      "text": "路径/绑定/证据、并发预算、崩溃恢复、分页、协议与只读watch测试可复用",
+      "refs": [
+        "test_controller.py:124",
+        "test_hardening.py:347",
+        "test_codex_protocol.py:112",
+        "test_watch_project.py:15"
+      ]
+    },
+    {
+      "text": "原生文本自检入口可复用环境核对，不能证明工程执行",
+      "refs": [
+        "run_selfcheck.py:19"
+      ]
+    }
+  ],
+  "suggested_new_groups": [
+    "干净Git/路径/未批准命令",
+    "FAIL与环境ERROR",
+    "独立候选版本审查",
+    "发布崩溃对账",
+    "预算原子预留",
+    "新进程恢复不重复派发"
+  ],
+  "gaps": [
+    "无managed_repo_v03/工程权限和批准检查的实际验收",
+    "无跨Git/SQLite发布恢复的端到端证据"
+  ],
+  "context_used": "仅指定测试/验收材料；细节外存；先新小仓库、后已有项目副本"
+}
