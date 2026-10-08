@@ -1,0 +1,180 @@
+{
+  "source_version": "0.2.1",
+  "overall_status": "PARTIAL",
+  "repair_scope_status": "ACCEPTED",
+  "verified_at": "2026-10-08T09:29:26.299352+08:00",
+  "baseline_commit": "a3c23339711baf189b955ddd7fa20955ea4b04f4",
+  "baseline_tag": "baseline-v0.2",
+  "code_candidate_commit": "bda744b4074309dcc02f67da5522f22a3d8942cb",
+  "branch": "codex/controller-hardening",
+  "source_files": {
+    "orchestrator.py": "8e9be3e73b908378daeba926f96f61b7b913c99f13dd279c764b728dd3b38a49",
+    "codex_adapter.py": "32b5e7055786cd94c7fafc49b85af5d03916b4e21dd11e93b0f9df4e1914ab26",
+    "native_rpc.py": "fee6d95b64f6262937736b244791d82e4ba89d3ef44b0d652dbf0e08a6ed3201",
+    "master.py": "3acd5254b0c895d93cd7fa958d005f2bbf1e850e50bc7b28f06cb7cff2be4adf",
+    "mcp_server.py": "9aaff1b2b98c921f765fb55f55fd30699c834f225c5857bfb0670ac14a0aa2b6",
+    "watch_project.py": "2c48a9640e5c5ba8a2fefc1c9f2c77c29b1a3d8ae947e5149c7ec43868473d7e"
+  },
+  "mock_regression": {
+    "evidence_status": "MOCK_VERIFIED",
+    "python": "3.12.14",
+    "tests_run": 59,
+    "failures": 0,
+    "errors": 0,
+    "passed": true,
+    "formal_runtime_or_delivery_evidence_modified": false,
+    "native_model_calls": 0
+  },
+  "independent_review": {
+    "status": "PASS",
+    "model": "gpt-6-luna",
+    "effort": "max",
+    "code_candidate": "bda744b4074309dcc02f67da5522f22a3d8942cb",
+    "readonly": true,
+    "report": "TASKS/FRAME-001-REVIEW.md"
+  },
+  "native_text_selfcheck": {
+    "evidence_status": "LIVE_VERIFIED",
+    "passed": true,
+    "candidate_commit": "bda744b4074309dcc02f67da5522f22a3d8942cb",
+    "source_files": {
+      "orchestrator.py": "8e9be3e73b908378daeba926f96f61b7b913c99f13dd279c764b728dd3b38a49",
+      "codex_adapter.py": "32b5e7055786cd94c7fafc49b85af5d03916b4e21dd11e93b0f9df4e1914ab26",
+      "native_rpc.py": "fee6d95b64f6262937736b244791d82e4ba89d3ef44b0d652dbf0e08a6ed3201",
+      "master.py": "3acd5254b0c895d93cd7fa958d005f2bbf1e850e50bc7b28f06cb7cff2be4adf",
+      "mcp_server.py": "9aaff1b2b98c921f765fb55f55fd30699c834f225c5857bfb0670ac14a0aa2b6",
+      "watch_project.py": "2c48a9640e5c5ba8a2fefc1c9f2c77c29b1a3d8ae947e5149c7ec43868473d7e"
+    },
+    "spec_sha256": "613286ab53afd0321dcb78ee313d805d049b18189fcf45c7aa70430de708de01",
+    "project_id": "p-d1c7ecef77a741e4",
+    "state": "ACCEPTED",
+    "error_class": null,
+    "roles": {
+      "executor": {
+        "session_id": "01a1191e-9bc1-77e1-ac27-6fe8e6bb6a27",
+        "requested_model": "gpt-6-luna",
+        "observed_model": "gpt-6-luna",
+        "requested_effort": "max",
+        "observed_effort": "max",
+        "native_version": "0.162.0-alpha.2",
+        "account_type": "chatgpt",
+        "usage": {
+          "total": {
+            "totalTokens": 10871,
+            "inputTokens": 10324,
+            "cachedInputTokens": 0,
+            "cacheWriteInputTokens": 0,
+            "outputTokens": 547,
+            "reasoningOutputTokens": 486
+          },
+          "last": {
+            "totalTokens": 10871,
+            "inputTokens": 10324,
+            "cachedInputTokens": 0,
+            "cacheWriteInputTokens": 0,
+            "outputTokens": 547,
+            "reasoningOutputTokens": 486
+          },
+          "modelContextWindow": 258400
+        }
+      },
+      "reviewer": {
+        "session_id": "01a1191e-e28c-7a73-9650-9600404384f3",
+        "requested_model": "gpt-6-luna",
+        "observed_model": "gpt-6-luna",
+        "requested_effort": "max",
+        "observed_effort": "max",
+        "native_version": "0.162.0-alpha.2",
+        "account_type": "chatgpt",
+        "usage": {
+          "total": {
+            "totalTokens": 23080,
+            "inputTokens": 22271,
+            "cachedInputTokens": 9984,
+            "cacheWriteInputTokens": 0,
+            "outputTokens": 809,
+            "reasoningOutputTokens": 462
+          },
+          "last": {
+            "totalTokens": 12101,
+            "inputTokens": 11528,
+            "cachedInputTokens": 9984,
+            "cacheWriteInputTokens": 0,
+            "outputTokens": 573,
+            "reasoningOutputTokens": 340
+          },
+          "modelContextWindow": 258400
+        }
+      }
+    },
+    "acceptance_proof_hash": "7714121ab6880c530edd371b73343c055b979e0472e8e2c821a187c187cbfa59",
+    "task_counts": {
+      "ACCEPTED": 1
+    },
+    "elapsed_seconds": 42.245,
+    "evidence_root": "E:\\零碎\\native-orchestrator-hardening\\.runtime\\FRAME-001-native-bda744b-host",
+    "coverage": "native managed_text_v02 loop only; repo_patch engineering route remains DESIGN_ONLY"
+  },
+  "local_mcp_transport": {
+    "evidence_status": "LOCAL_TRANSPORT_VERIFIED",
+    "candidate_commit": "fe2b8e2",
+    "native_model_calls": 0,
+    "decisions_returned": 100,
+    "max_frame_bytes": 5312,
+    "wire_frames": [
+      {
+        "method": "initialize",
+        "response_bytes": 164
+      },
+      {
+        "method": "tools/list",
+        "response_bytes": 1931
+      },
+      {
+        "method": "tools/call",
+        "response_bytes": 5311
+      },
+      {
+        "method": "tools/call",
+        "response_bytes": 5312
+      },
+      {
+        "method": "tools/call",
+        "response_bytes": 5312
+      },
+      {
+        "method": "tools/call",
+        "response_bytes": 5312
+      },
+      {
+        "method": "tools/call",
+        "response_bytes": 4169
+      }
+    ],
+    "passed": true
+  },
+  "protected_original_file_hashes": {
+    "ACCEPTANCE.json": "4def7197531d66c29245c671cde2795955c1b8d9f8aaeccab063c538479eaa11",
+    "config.live.json": "1b88123bf6c0c7cd789387eb4a7c80aed359a1fbaf9b7b93e4659efc8c9ddf61",
+    "config.codex.json": "8449ba1bc8215ce744ed0bb419ac0ecadf3d461394e542eb02069b0157617677",
+    "data-live/state.sqlite": "371bdd6bd9be54ab1d768cf2a12b9cc23d3166a5a7bec4bb74813edfdbd7e3a2"
+  },
+  "legacy_preflight": "LEGACY_DATA_REQUIRES_EXPLICIT_MIGRATION",
+  "sandbox_compatibility": {
+    "ordinary_tools": "VERIFIED",
+    "nested_codex_cli_in_mxc": "BLOCKED_CANONICALIZE_CODEX_HOME_ERROR_5",
+    "host_launched_native_roles": "LIVE_VERIFIED",
+    "global_config_modified_this_project_repair": false
+  },
+  "not_implemented": [
+    "managed_repo_v03/repo_patch",
+    "engineering_OS_readonly_isolation",
+    "approved_build_check_catalog",
+    "Git_SQLite_CURRENT_promotion_reconciliation",
+    "delivery_ack",
+    "cumulative_business_byte_budget",
+    "legacy_state_migration"
+  ],
+  "no_remote_push_or_pull_request": true,
+  "formal_data_or_private_config_migrated": false
+}

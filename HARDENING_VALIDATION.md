@@ -8,9 +8,11 @@ Git 使用方式为：冻结基线 → TASK 票据 → 独立 worktree 修改 �
 
 ## 验证状态
 
-- Luna/max 初始完整测试 47/47 通过，见 TASKS/FRAME-001-TEST-REPORT.md；均为 MOCK。独立审查随后拦下36f73b6的事务、依赖指针、规划预算归属和旧库门禁问题；修正后需再次冻结并验收。
+- Luna/max 最终完整回归 59/59 通过，0失败/错误，见 TASKS/FRAME-001-TEST-REPORT.md；均为 MOCK。新增覆盖规范改写、单次证据快照、递归依赖失效、规划预算/版本、证据策略指纹。中间未通过候选保留在 Git 历史，均未合入原目录。
 - 当前 Codex 0.162.0-alpha.2 已在独立目录导出 experimental JSON Schema，核对模型分页、effort、thread/turn、动态只读工具字段；指纹见 PROTOCOL_SUPPORT.json。未来原生版本仍需重新核对，未放宽为任意 0.162。
-- 最终候选的完整回归、独立复核和真实 Luna/max 文本自检尚待完成；结论与源代码提交将登记在 FRAME-001-ACCEPTANCE.json。
+- 最终代码候选 bda744b4074309dcc02f67da5522f22a3d8942cb，经独立 Luna/max 只读复审 PASS；审查者未运行模型或修改文件，见 TASKS/FRAME-001-REVIEW.md。
+- 宿主真实自检为 LIVE_VERIFIED：项目 p-d1c7ecef77a741e4，两个不同原生会话均为 gpt-6-luna/max、0.162.0-alpha.2；执行、程序检查、独立实际回读和完整 proof 接纳通过。只运行两个角色回合；模型内置上下文及工具步骤仍计入订阅额度。报告在修复工作树 .runtime/FRAME-001-native-bda744b-host/report.json，汇总见 FRAME-001-ACCEPTANCE.json。
+- 实际 MCP stdio 完整返回100条未决决策，最大消息含包装5312 bytes，低于8192；模型调用为0。该接口测试在fe2b8e2执行，最终MCP封装源码未再改变。
 
 复验命令：`python -B run_tests.py --report <新的报告路径>`。该入口导入测试类并在临时目录运行，不执行旧测试的 evidence 写入入口。真实验证为 `python -B run_selfcheck.py --output <当前 checkout/.runtime 下的新目录>`，要求干净 Git 候选；只允许两个既有 ChatGPT 订阅 Luna/max 回合，无额外付费路由或自动返工。
 
@@ -23,3 +25,5 @@ Git 使用方式为：冻结基线 → TASK 票据 → 独立 worktree 修改 �
 MXC 对照：工具沙箱内启动嵌套 Codex app-server 时，私有 CODEX_HOME canonicalize 返回 os error5，initialize 前退出且未调用模型。宿主启动相同候选的两角色文本自检已通过；这两种启动环境分别记录，宿主成功不表示嵌套 MXC 已通过。后台兼容性由单独沙箱交接提示词承接。
 
 代码回退使用 Git revert 或从 baseline-v0.2 创建独立恢复 worktree；不自动降级数据库或清除测试/故障证据。本轮正式数据未迁移，因此源码回退不需要撤销正式数据变更。
+
+截图设置与本次真实 Git 用法见 GIT_实际使用说明.md。本仓库当前只有本地提交，无远端、推送或 PR。已冻结并验收的代码合入 main；测试数据库和私有原生目录留在独立工作树，不进入 Git。
