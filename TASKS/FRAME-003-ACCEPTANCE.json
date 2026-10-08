@@ -1,0 +1,27 @@
+{
+  "task_id": "FRAME-003",
+  "status": "ACCEPTED_WORKSPACE_ONLY",
+  "code_candidate_commit": "be71b86",
+  "independent_review": "PASS",
+  "checks": {
+    "evidence_status": "MOCK_VERIFIED",
+    "python": "3.14.7",
+    "tests_run": 96,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 3,
+    "real_git_workspace_tests_enabled": true,
+    "passed": true,
+    "formal_runtime_or_delivery_evidence_modified": false,
+    "native_model_calls": 0
+  },
+  "source_sha256": "9095d575429d194cde78b8fd71c057946abf64f1624f6a3ad37837538a9b1295",
+  "evidence_kind": "LOCAL_GIT_AND_MOCK_REGRESSION",
+  "native_calls": 0,
+  "engineering_checks_run": 0,
+  "repo_patch_dispatchable": false,
+  "real_os_links": "UNKNOWN_ENVIRONMENT_SKIP",
+  "root_workspace_evidence": ".runtime/frame-003-real/root-workspace-attempt2-report.json",
+  "review_ref": "TASKS/FRAME-003-REVIEW.md",
+  "next_task": "FRAME-004"
+}

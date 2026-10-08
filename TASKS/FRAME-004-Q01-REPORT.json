@@ -1,0 +1,43 @@
+{
+  "task_id": "FRAME-004-Q01",
+  "agent": "luna_check_protocol_query",
+  "mode": "READ_ONLY",
+  "status": "FOUND_SCHEMA_CANDIDATE",
+  "native_calls": 0,
+  "live_runtime": "UNKNOWN",
+  "facts": {
+    "method": "command/exec",
+    "model_turn_required": false,
+    "params": [
+      "command",
+      "cwd",
+      "env",
+      "timeoutMs",
+      "outputBytesCap",
+      "sandboxPolicy",
+      "permissionProfile"
+    ],
+    "sandbox_candidate": {
+      "type": "workspaceWrite",
+      "writableRoots": "explicit",
+      "networkAccess": false
+    },
+    "response": [
+      "exitCode",
+      "stdout",
+      "stderr"
+    ]
+  },
+  "do_not_use": "thread/shellCommand is unsandboxed full access",
+  "evidence_refs": [
+    "hardening/.runtime/protocol-0.162.0-alpha.2/ClientRequest.json",
+    "hardening/.runtime/protocol-0.162.0-alpha.2/v2/CommandExecResponse.json",
+    "native_rpc.py:91",
+    "codex_adapter.py:59"
+  ],
+  "unknowns": [
+    "installed live version",
+    "real write/network denial",
+    "permission provenance"
+  ]
+}
