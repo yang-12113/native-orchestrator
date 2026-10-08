@@ -1,0 +1,25 @@
+{
+  "task_id": "FRAME-002",
+  "status": "ACCEPTED_PREFLIGHT_ONLY",
+  "code_candidate_commit": "19d8150",
+  "independent_review": "PASS",
+  "evidence_kind": "MOCK_AND_READONLY_GIT",
+  "checks": {
+    "evidence_status": "MOCK_VERIFIED",
+    "python": "3.14.7",
+    "tests_run": 78,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 1,
+    "passed": true,
+    "formal_runtime_or_delivery_evidence_modified": false,
+    "native_model_calls": 0
+  },
+  "source_sha256": "99fbd438cc7a2d83923b35010ddc23860d86532c8ba3d058d319fff9278a9746",
+  "native_calls": 0,
+  "repo_patch_dispatchable": false,
+  "real_symlink_scope": "UNKNOWN_ENVIRONMENT_SKIP",
+  "review_ref": "TASKS/FRAME-002-REVIEW.md",
+  "test_ref": "TASKS/FRAME-002-TEST-REPORT.md",
+  "next_task": "FRAME-003"
+}

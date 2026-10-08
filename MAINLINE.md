@@ -4,11 +4,11 @@
 
 唯一主线：在已验收 v0.2.1 文本控制器上实现 v0.3 受限自动工程闭环：冻结 Git 输入 → 限定修改 → 批准的程序检查 → 独立冻结版本审查 → 有限返工 → 接纳/合入 → 中断对账与恢复。
 
-当前事实：发布基线 b97788f0c7f3318874765c0fcd664d4bc05e80ed，标签 controller-v0.2.1-verified；实际验收代码候选 bda744b4074309dcc02f67da5522f22a3d8942cb。两提交只差交付文档，运行源码哈希一致，绑定证据 TASKS/PLAN-BASELINE-BINDING.json。59项隔离测试、独审和原生文本自检通过。v0.3仍未实现，不能提交 DESIGN_ONLY 样例或声称工程链路通过。计划独审已PASS；FRAME-002正在隔离工作树E:\零碎\native-orchestrator-v03实现，工程队列仍未启用。权威开发状态位于原源码目录的DEVELOPMENT_STATE.json，工作树内为同步副本。
+当前事实：发布基线 b97788f0c7f3318874765c0fcd664d4bc05e80ed，标签 controller-v0.2.1-verified；实际验收代码候选 bda744b4074309dcc02f67da5522f22a3d8942cb。两提交只差交付文档，运行源码哈希一致，绑定证据 TASKS/PLAN-BASELINE-BINDING.json。59项隔离测试、独审和原生文本自检通过。v0.3仍未实现，不能提交 DESIGN_ONLY 样例或声称工程链路通过。计划独审已PASS；FRAME-002独立预检已验收（代码候选19d8150）；78项运行/77通过/1环境跳过，工程队列仍未启用。代码位于隔离工作树E:\零碎\native-orchestrator-v03。权威开发状态位于原源码目录的DEVELOPMENT_STATE.json，工作树内为同步副本。
 
 恢复顺序：只读本文件 → DEVELOPMENT_STATE.json → 当前 TASKS 票据 → 该票据引用的必要源码/差异。校验实际 HEAD、工作树改动和报告中的 commit；存在未提交工作先识别归属，不自动清空。不要为恢复重读全部聊天、日志或历史研究。
 
-当前下一步：FRAME-002 工程契约与派发预检，详见 TASKS/FRAME-002.md。先实施必要的契约/能力/预算/路径门禁，再开展工作区及检查执行。PLAN-Q01、PLAN-Q02只读盘点已完成；PLAN-R01计划独审已PASS；当前Luna仅测试execution_contract接口，主代理维护实现与整合。
+当前下一步：FRAME-003 隔离工程工作区，票据E:\零碎\native-orchestrator-v03\TASKS\FRAME-003.md。FRAME-002预检已独审PASS，能力验证、批准检查和真实执行仍需FRAME-004/005；G1尚未完成。PLAN-Q01/Q02与PLAN-R01已完成，原data-live/配置/校招业务不变。
 
 分工：主代理负责范围、架构、核心状态/证据/发布、票据、Git整合和最终接纳。Luna负责明确范围的查询、重复检查、测试样例、独立模块及独审。任何共享核心文件由一个作者负责；测试作者与最终审查者分开。使用独立开发工作树后再改运行代码。
 

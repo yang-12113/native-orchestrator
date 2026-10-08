@@ -11,16 +11,15 @@
   "baseline_code_commit": "b97788f0c7f3318874765c0fcd664d4bc05e80ed",
   "baseline_tag": "controller-v0.2.1-verified",
   "baseline_regression_tests": 59,
-  "current_phase": "FRAME_002_REVIEW",
-  "current_task": "FRAME-002",
-  "next_action": "等待Luna独立复审75bd122，只修明确问题；通过后归档FRAME-002证据，继续FRAME-003/004工作区和检查执行，不启用工程队列。",
+  "current_phase": "FRAME_003_READY",
+  "current_task": "FRAME-003",
+  "next_action": "读FRAME-003票据，主代理冻结工作区/提案接口，给新Luna辅助模块与独立测试分配唯一文件；FRAME-004真实执行边界未验证，不启用工程队列。",
   "code_worktree": "E:\\零碎\\native-orchestrator-v03",
   "code_branch": "codex/engineering-v03",
   "resume_files": [
     "MAINLINE.md",
     "DEVELOPMENT_STATE.json",
-    "TASKS/PLAN-R01.md",
-    "TASKS/FRAME-002.md"
+    "E:\\零碎\\native-orchestrator-v03\\TASKS\\FRAME-003.md"
   ],
   "completed": [
     {
@@ -45,6 +44,12 @@
       "status": "PASS",
       "agent": "luna_v03_plan_review",
       "evidence": "TASKS/PLAN-R01-REPORT.json"
+    },
+    {
+      "id": "FRAME-002",
+      "status": "ACCEPTED_PREFLIGHT_ONLY",
+      "candidate": "19d8150",
+      "evidence": "E:\\零碎\\native-orchestrator-v03\\TASKS\\FRAME-002-ACCEPTANCE.json"
     }
   ],
   "tasks": [
@@ -63,7 +68,7 @@
       "owner": "root",
       "test_owner": "Luna/max",
       "review_owner": "independent Luna/max",
-      "status": "REVIEW_PENDING",
+      "status": "ACCEPTED_PREFLIGHT_ONLY",
       "dependencies": [
         "PLAN-R01"
       ],
@@ -72,10 +77,11 @@
     {
       "id": "FRAME-003",
       "owner": "root interface / Luna workspace helper",
-      "status": "PLANNED",
+      "status": "READY",
       "dependencies": [
         "FRAME-002"
-      ]
+      ],
+      "ticket": "E:\\零碎\\native-orchestrator-v03\\TASKS\\FRAME-003.md"
     },
     {
       "id": "FRAME-004",
@@ -159,9 +165,7 @@
     "G4": "NOT_STARTED"
   },
   "pending_decisions": [],
-  "active_delegations": [
-    "luna_contract_review"
-  ],
+  "active_delegations": [],
   "context_policy": {
     "new_domain_fork_turns": "none",
     "max_concurrent_luna_workitems": 2,
@@ -199,16 +203,14 @@
   "baseline_binding_evidence": "TASKS/PLAN-BASELINE-BINDING.json",
   "plan_candidate_commit": "13360a9",
   "authoritative_development_state": "E:\\零碎\\native-orchestrator\\DEVELOPMENT_STATE.json",
-  "current_candidate_commit": "75bd122",
+  "current_candidate_commit": "19d8150",
   "latest_checks": {
-    "unified_tests_run": 76,
-    "passed": 75,
+    "tests_run": 78,
+    "passed": 77,
     "failed": 0,
     "errors": 0,
     "skipped": 1,
-    "skip_reason": "OS symlink privilege unavailable",
     "evidence": "E:\\零碎\\native-orchestrator-v03\\.runtime\\frame-002-unified-report.json",
-    "real_git_probe": "READ_ONLY_GIT_PROBE_VERIFIED",
     "native_calls": 0
   }
 }

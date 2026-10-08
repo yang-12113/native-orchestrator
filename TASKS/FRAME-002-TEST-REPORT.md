@@ -1,7 +1,7 @@
 # FRAME-002 测试报告
 
-task_id: FRAME-002  
-status: PASS_WITH_REAL_SYMLINK_SKIPPED  
+task_id: FRAME-002
+status: PASS_WITH_REAL_SYMLINK_SKIPPED
 candidate_commit: 未采集（本次未执行 Git 操作）。按主代理说明，bda744b 是旧文本验收基线，FRAME-002 初版 75bd122 已被拦截，均不作为本次测试候选。
 
 facts/findings: 新增两个边界负例：`allowed_changes=["src"]` 覆盖受保护子路径 `src/private.json` 必须拒绝；已存在的目录 `src` 不能作为改动目标，必须返回 `INVALID_PATH`。两项均通过。所有预检用例使用 worktree 内临时 fixture 与 fake repository_probe；不调用 Git 探测、模型、批准命令或数据库。契约通过仍断言 `dispatchable=False`。
