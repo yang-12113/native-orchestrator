@@ -1,19 +1,11 @@
-# FRAME-003 测试报告
+# FRAME-003 实际测试记录
 
-## 主代理实际验收记录
+最新修正版：18项真实Git测试并入统一七模块。96项运行、93通过、0失败/错误、3真实OS链接权限跳过；其中工作区18项16通过/2链接跳过。报告.runtime/frame-003-reviewed-unified-report.json，日志.runtime/frame-003-reviewed-unified.log。
 
-最终真实Git套件：16项运行，14通过，0失败/错误，2项真实OS链接创建权限跳过。统一七模块：94项运行，91通过，0失败/错误，3项真实链接权限跳过；原78项回归有效。报告`.runtime/frame-003-unified-report.json`，日志`.runtime/frame-003-unified-run.log`。这些是本机真实Git与假模型组合，原生模型调用0；不证明工程OS隔离。
+独审追加两负例已单独通过：workspace切共享源branch后freeze拒绝且源HEAD/字节不变；note[1].txt使用literal pathspec，仅批准字面路径改变、兄弟文件blob不变、重复apply/freeze不多commit。
 
-root小仓库实际验证：新的attempt=2完成detached创建、批准文件修改、候选commit、重复提案和重复冻结幂等，原源码文件SHA前后相同；报告`.runtime/frame-003-real/root-workspace-attempt2-report.json`。attempt=1因Windows文本模式LF转CRLF而失败，保留APPLYING意图，未盲重放。实现修复三处os.open为O_BINARY。
+之前真实Git16项14通过/2跳过；root新小仓库attempt2 create/apply/freeze、重复提案/冻结幂等、原文件SHA不变通过，.runtime/frame-003-real/root-workspace-attempt2-report.json。attempt1因Windows文本fd换行转换导致哈希失败，保留APPLYING意图未重放；三处os.open已加O_BINARY。短fixture避免Windows路径超限，未知APPLYING注入依据持久状态而非固定fence次数。
 
-首轮长fixture路径超Windows限制，保留14 errors/1 skip/1 pass现场；第二轮短路径剩1个过早authority故障注入的测试问题；按持久APPLYING状态注入后第三轮通过。夹具路径修正与业务断言分开，没有清理未知workspace或修改正式数据。
+未验证：真实OS symlink因WinError1314跳过，不作为权限/隔离通过。没有原生模型调用，没有批准工程检查，正式数据/校招/auth/global配置未改。所有真实Git操作只在全新的各自.runtime/frame-003-test-*和root-owned小仓库。
 
-状态：两轮实测仍有失败；未知 APPLYING 故障注入已修订，等待主代理第三轮验收。
-
-数量：首轮 16 用例，14 errors、1 skip、1 pass，主要因 WinError 206 长路径。短路径第二轮 16 次，13 pass、1 failure、2 个真实 OS 链接 SKIP。
-
-第二轮失败：故障回调在持久 APPLYING 意图写入前就拒绝；记录仍为 READY，模块正确允许后续新授权。测试现改为读取 `workspace.control.json`，观察到 APPLYING 后才拒绝，并断言目标未写、记录仍 APPLYING、重放为 RECONCILIATION_REQUIRED。
-
-修订：fixture 使用 `cNN-<6位UUID>`，测试名映射在 `case-map.json`；filter 配置拒绝时要求 HEAD 不变且 marker 未触发，另验证 hook/GPG/SSH tripwire 冻结不执行。
-
-证据：`test_repo_workspace.py`（16 用例，AST 解析通过，作者未重跑）；两轮实际结果据主代理宿主摘要。链接 SKIP 不作为 OS 链接证明。
+作者角色：Luna实现repo_workspace.py；另一Luna写独立测试；root整合binary/detached/literal修复并宿主执行实际测试。独立审查另用新上下文，尚未以这些测试证明完整工程运行时通过。

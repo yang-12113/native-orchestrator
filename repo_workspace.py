@@ -215,6 +215,7 @@ def _git_environment() -> dict:
     env = {key: value for key, value in os.environ.items() if not key.upper().startswith("GIT_")}
     env.update({
         "GIT_OPTIONAL_LOCKS": "0",
+        "GIT_LITERAL_PATHSPECS": "1",
         "GIT_CONFIG_NOSYSTEM": "1",
         "GIT_CONFIG_GLOBAL": os.devnull,
         "GIT_TERMINAL_PROMPT": "0",
@@ -768,6 +769,10 @@ def _verify_worktree(descriptor: dict, record: dict, executable: str, *, expecte
         _error("WORKTREE_INVALID", "Git returned an invalid workspace root")
     if not _same_path(top_path, root):
         _error("WORKTREE_INVALID", "Git worktree root differs from the descriptor")
+    symbolic = _git(root, ["symbolic-ref", "-q", "HEAD"],
+                    hook_path=_hook_path(descriptor), executable=executable, allow_codes=(0, 1))
+    if symbolic:
+        _error("WORKTREE_NOT_DETACHED", "Workspace HEAD must stay detached; shared branches cannot be advanced")
     head = _git_text(_git(root, ["rev-parse", "--verify", "HEAD^{commit}"],
                           hook_path=_hook_path(descriptor), executable=executable), "workspace HEAD")
     if head.lower() != expected_head.lower():

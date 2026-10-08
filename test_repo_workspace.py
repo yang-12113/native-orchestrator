@@ -481,6 +481,73 @@ class RepoWorkspaceTests(unittest.TestCase):
         self.assertEqual(self._head(), before_head)
         self.assertEqual(self._git("diff", "--cached", "--name-only", cwd=self.workspace_root).stdout, "")
 
+    def test_freeze_rejects_workspace_attached_to_shared_source_branch(self):
+        self._create()
+        self._apply(self._proposal("attached-branch"))
+        branch = self._git("symbolic-ref", "--short", "HEAD", cwd=self.source).stdout.strip()
+        self.assertTrue(branch)
+        source_before = tree_snapshot(self.source)
+        source_head = self._git("rev-parse", "HEAD", cwd=self.source).stdout.strip()
+        self.assertEqual(source_head, self.base_commit)
+        self.assertEqual(self._git("rev-parse", "refs/heads/" + branch, cwd=self.source).stdout.strip(),
+                         self.base_commit)
+
+        self._git("switch", "--ignore-other-worktrees", branch, cwd=self.workspace_root)
+        self.assertEqual(self._git("symbolic-ref", "--short", "HEAD", cwd=self.workspace_root).stdout.strip(),
+                         branch)
+        workspace_before_freeze = tree_snapshot(self.workspace_root)
+        self._assert_rejected(lambda: self._freeze(), "WORKTREE_NOT_DETACHED")
+
+        self.assertEqual(tree_snapshot(self.workspace_root), workspace_before_freeze)
+        self.assertEqual(self._head(), self.base_commit)
+        self.assertEqual(self._git("symbolic-ref", "--short", "HEAD", cwd=self.workspace_root).stdout.strip(),
+                         branch)
+        self.assertEqual(self._git("rev-parse", "HEAD", cwd=self.source).stdout.strip(), source_head)
+        self.assertEqual(self._git("rev-parse", "refs/heads/" + branch, cwd=self.source).stdout.strip(),
+                         self.base_commit, "candidate freeze must not advance the shared source branch")
+        self.assertEqual(tree_snapshot(self.source), source_before)
+        self.assertEqual(self._git("diff", "--cached", "--name-only", cwd=self.workspace_root).stdout, "")
+
+    def test_bracket_path_is_literal_approved_and_idempotent(self):
+        sibling_bytes = b"tracked sibling that matches a pathspec pattern\n"
+        (self.source / "note1.txt").write_bytes(sibling_bytes)
+        self._git("add", "note1.txt", cwd=self.source)
+        self._git("commit", "--no-gpg-sign", "-m", "add pathspec sibling", cwd=self.source)
+        self.base_commit = self._git("rev-parse", "HEAD", cwd=self.source).stdout.strip()
+        source_before = tree_snapshot(self.source)
+        self._create()
+
+        literal_bytes = b"approved literal bracket path\n"
+        proposal = self._proposal("literal-bracket", [
+            self._new_change("note[1].txt", literal_bytes.decode("utf-8"))])
+        first_apply = self._apply(proposal, ["note[1].txt"])
+        second_apply = self._apply(proposal, ["note[1].txt"])
+        self.assertEqual(second_apply, first_apply)
+        self.assertEqual((self.workspace_root / "note[1].txt").read_bytes(), literal_bytes)
+        self.assertEqual((self.workspace_root / "note1.txt").read_bytes(), sibling_bytes)
+
+        first_candidate = self._freeze()
+        candidate_commit = first_candidate["candidate_commit"]
+        self.assertEqual([item["path"] for item in first_candidate["files"]], ["note[1].txt"])
+        self.assertEqual([item["path"] for item in first_candidate["changes"]], ["note[1].txt"])
+        changed_paths = self._git("diff-tree", "--no-commit-id", "--name-only", "-r", "--no-renames",
+                                  self.base_commit, candidate_commit, cwd=self.workspace_root).stdout.splitlines()
+        self.assertEqual(changed_paths, ["note[1].txt"])
+        self.assertEqual(self._git("cat-file", "blob", candidate_commit + ":note[1].txt",
+                                   cwd=self.workspace_root).stdout.encode("utf-8"), literal_bytes)
+        self.assertEqual(self._git("cat-file", "blob", candidate_commit + ":note1.txt",
+                                   cwd=self.workspace_root).stdout.encode("utf-8"), sibling_bytes)
+        self.assertEqual((self.workspace_root / "note1.txt").read_bytes(), sibling_bytes)
+        self.assertEqual(tree_snapshot(self.source), source_before)
+
+        first_head = self._head()
+        first_count = self._git("rev-list", "--count", "HEAD", cwd=self.workspace_root).stdout.strip()
+        second_candidate = self._freeze()
+        self.assertEqual(second_candidate, first_candidate)
+        self.assertEqual(self._head(), first_head)
+        self.assertEqual(self._git("rev-list", "--count", "HEAD", cwd=self.workspace_root).stdout.strip(),
+                         first_count)
+
     def test_freezing_is_idempotent_and_a_frozen_workspace_rejects_new_proposals(self):
         self._create()
         self._apply(self._proposal("to-freeze"))

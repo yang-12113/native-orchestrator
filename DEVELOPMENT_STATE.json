@@ -11,9 +11,9 @@
   "baseline_code_commit": "b97788f0c7f3318874765c0fcd664d4bc05e80ed",
   "baseline_tag": "controller-v0.2.1-verified",
   "baseline_regression_tests": 59,
-  "current_phase": "FRAME_003_IMPLEMENTATION",
+  "current_phase": "FRAME_003_REVIEW_REWORK",
   "current_task": "FRAME-003",
-  "next_action": "Luna按冻结API分别实现repo_workspace.py与独立测试；主代理整合并跑实际Git/worktree验证，冻结候选后独审。",
+  "next_action": "补共享branch拒绝与方括号literal pathspec实Git负例；运行相关/统一测试，冻结修正版后复审；07dce23未接纳。",
   "code_worktree": "E:\\零碎\\native-orchestrator-v03",
   "code_branch": "codex/engineering-v03",
   "resume_files": [
@@ -77,7 +77,7 @@
     {
       "id": "FRAME-003",
       "owner": "root interface / Luna workspace helper",
-      "status": "IN_PROGRESS",
+      "status": "REVIEW_PENDING",
       "dependencies": [
         "FRAME-002"
       ],
@@ -166,7 +166,6 @@
   },
   "pending_decisions": [],
   "active_delegations": [
-    "luna_workspace_impl",
     "luna_workspace_tests"
   ],
   "context_policy": {
@@ -206,14 +205,19 @@
   "baseline_binding_evidence": "TASKS/PLAN-BASELINE-BINDING.json",
   "plan_candidate_commit": "13360a9",
   "authoritative_development_state": "E:\\零碎\\native-orchestrator\\DEVELOPMENT_STATE.json",
-  "current_candidate_commit": "19d8150",
+  "current_candidate_commit": "07dce23",
   "latest_checks": {
-    "tests_run": 78,
-    "passed": 77,
+    "tests_run": 94,
+    "passed": 91,
     "failed": 0,
     "errors": 0,
-    "skipped": 1,
-    "evidence": "E:\\零碎\\native-orchestrator-v03\\.runtime\\frame-002-unified-report.json",
+    "skipped": 3,
+    "evidence": "E:\\零碎\\native-orchestrator-v03\\.runtime\\frame-003-unified-report.json",
+    "local_git_workspace": "VERIFIED_SOURCE_UNCHANGED_AND_IDEMPOTENT",
     "native_calls": 0
-  }
+  },
+  "confirmed_rework": [
+    "工作区每次验证HEAD必须detached，不能推进源共享branch",
+    "所有Git pathspec使用literal，方括号路径不能glob展开"
+  ]
 }
