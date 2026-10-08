@@ -76,7 +76,7 @@ def safe_child(root, name):
     return target
 
 
-def manifest(directory):
+def manifest(directory, captured=None):
     directory = Path(directory)
     items = []
     for file in sorted(directory.rglob("*")):
@@ -84,6 +84,8 @@ def manifest(directory):
             raise ValueError("Linked artifact rejected")
         if file.is_file():
             data = file.read_bytes()
+            if captured is not None:
+                captured[file.relative_to(directory).as_posix()] = data
             if len(data) > MAX_ARTIFACT:
                 raise ValueError("Artifact size exceeded")
             items.append({"path": file.relative_to(directory).as_posix(), "bytes": len(data),
@@ -93,14 +95,14 @@ def manifest(directory):
     return {"files": items, "hash": digest(items)}
 
 
-def check_files(spec, directory):
+def check_files(spec, directory, snapshot=None):
     results = []
     for i, check in enumerate(spec.get("checks", [])):
         cid = check.get("id", "check-" + str(i))
         result = {"id": cid, "kind": check["kind"], "passed": False}
         try:
             path = safe_child(directory, check["path"])
-            raw = path.read_bytes()
+            raw = path.read_bytes() if snapshot is None else snapshot[check["path"]]
             result.update(path=check["path"], sha256=digest(raw), bytes=len(raw))
             kind = check["kind"]
             if kind == "csv":
@@ -137,7 +139,7 @@ def check_files(spec, directory):
                 result["error_class"] = "CHECK_ENVIRONMENT_ERROR"
         results.append(result)
     for required in spec["artifacts"]:
-        if not safe_child(directory, required).is_file():
+        if not (safe_child(directory, required).is_file() if snapshot is None else required in snapshot):
             results.append({"id": "required:" + required, "passed": False, "error": "Missing artifact"})
     passed = bool(results) and all(x["passed"] for x in results)
     return {"passed": passed, "checks": results,
@@ -338,9 +340,12 @@ class Controller:
         masters = self.db.execute("SELECT COUNT(*) FROM calls WHERE (task_id LIKE ? OR task_id LIKE ?) AND role='master'", prefixes).fetchone()[0]
         if used > self.config.get("max_project_turns", 60) or masters > self.config.get("max_master_turns", 4):
             raise RuntimeError("BUDGET_EXHAUSTED: planning reservations cannot be attached within project budget")
+        attached_ids = [r[0] for r in self.db.execute("SELECT id FROM calls WHERE task_id=? ORDER BY id", (planning_id + ":planning",))]
         self.db.execute("UPDATE calls SET task_id=? WHERE task_id=?", (project + ":planning", planning_id + ":planning"))
         self.db.execute("UPDATE events SET project_id=?,task_id=? WHERE project_id=? AND task_id=?",
             (project, project + ":planning", planning_id, planning_id + ":planning"))
+        if attached_ids:
+            self.event(project, project + ":planning", "PLANNING_ATTACHED_" + digest(attached_ids)[:16])
 
     def task_dir(self, task):
         return self.data / "projects" / task["project_id"] / task["local_id"] / str(task["attempt"])
@@ -595,11 +600,14 @@ class Controller:
                 "checker_sha256": digest("\n".join(inspect.getsource(f) for f in (safe_child, manifest, check_files)).encode()),
                 "review_schema_sha256": digest(REVIEW_SCHEMA),
                 "validator_sha256": digest(inspect.getsource(Controller.validate_review).encode()),
+                "acceptance_validator_sha256": digest(inspect.getsource(Controller.verify_accepted).encode()),
+                "dependency_receipt_sha256": digest(inspect.getsource(Controller.dependency_receipt).encode()),
                 "python": list(sys.version_info[:3]), "platform": sys.platform}
 
     @staticmethod
-    def verify_read_receipts(directory, expected):
-        reads = json.loads((directory / "review-read-receipts.json").read_text(encoding="utf-8"))
+    def verify_read_receipts(directory, expected, reads=None, snapshot=None):
+        if reads is None:
+            reads = json.loads((directory / "review-read-receipts.json").read_bytes())
         if not isinstance(reads, list):
             raise EvidenceChangedError("Review read receipts are invalid")
         observed = {}
@@ -614,24 +622,33 @@ class Controller:
         if set(observed) != set(expected):
             raise EvidenceChangedError("Reviewer did not read every fixed evidence file")
         for path, sha in expected.items():
-            if digest(safe_child(directory, path).read_bytes()) != sha:
+            raw = safe_child(directory, path).read_bytes() if snapshot is None else snapshot[path]
+            if digest(raw) != sha:
                 raise EvidenceChangedError("Evidence changed during review: " + path)
 
-    def create_proof(self, task, directory, mf, reviewer):
+    def create_proof(self, task, directory, mf, reviewer, canonical_input):
         names = ["spec.json", "checks.json", "manifest.json", "review-input.json", "review.json", "review-read-receipts.json"]
         if json.loads(task["spec"]).get("sources"):
             names += ["collection-sources.json", "independent-sources.json"]
         files = {name: digest(safe_child(directory, name).read_bytes()) for name in names}
         return {"policy": self.proof_policy(), "task_id": task["id"], "attempt": task["attempt"],
                 "spec_version": task["spec_version"], "spec_sha256": digest(json.loads(task["spec"])),
+                "input_spec_sha256": digest(canonical_input),
                 "artifact_manifest_hash": mf["hash"], "files": files,
                 "reviewer_session_id": reviewer["session_id"], "reviewer_model": reviewer["observed_model"],
                 "native_version": reviewer.get("native_version"),
                 "evidence_status": "MOCK_VERIFIED" if self.config["reviewer"]["client"] == "mock" or not reviewer.get("native_version") else "LIVE_VERIFIED"}
 
-    def verify_accepted(self, task):
+    def verify_accepted(self, task, with_evidence=False, _cache=None, _ancestry=()):
         if task["state"] != "ACCEPTED" or not task["acceptance_proof"]:
             raise EvidenceChangedError("Accepted task has no complete bound proof")
+        if task["id"] in _ancestry or len(_ancestry) >= 100:
+            raise EvidenceChangedError("Accepted dependency graph contains a cycle or exceeds the bound")
+        cache = {} if _cache is None else _cache
+        cache_key = (task["id"], task["attempt"], task["spec_version"], task["acceptance_proof_hash"])
+        if cache_key in cache:
+            result = cache[cache_key]
+            return result if with_evidence else result["proof"]
         proof = json.loads(task["acceptance_proof"])
         if not isinstance(proof, dict):
             raise EvidenceChangedError("Acceptance proof must be an object")
@@ -652,24 +669,60 @@ class Controller:
             required |= {"collection-sources.json", "independent-sources.json"}
         if set(proof.get("files", {})) != required:
             raise EvidenceChangedError("Acceptance proof file set changed")
+        raw_files = {}
         for name, sha in proof["files"].items():
-            if digest(safe_child(directory, name).read_bytes()) != sha:
+            raw_files[name] = safe_child(directory, name).read_bytes()
+            if digest(raw_files[name]) != sha:
                 raise EvidenceChangedError("Accepted evidence changed: " + name)
-        mf = manifest(directory / "artifacts")
+        evidence = {name: json.loads(raw) for name, raw in raw_files.items()}
+        effective_spec = evidence["spec.json"]
+        base_spec = {k: v for k, v in json.loads(task["spec"]).items() if not k.startswith("mock_")}
+        base_spec["controller_dependency_receipts"] = effective_spec.get("controller_dependency_receipts")
+        if effective_spec != base_spec or digest(effective_spec) != proof.get("input_spec_sha256"):
+            raise EvidenceChangedError("Reviewed specification is not the canonical task input")
+        receipts = effective_spec.get("controller_dependency_receipts")
+        deps = json.loads(task["spec"]).get("depends_on", [])
+        if not isinstance(receipts, list) or len(receipts) != len(deps):
+            raise EvidenceChangedError("Canonical dependency receipts are invalid")
+        for name, receipt in zip(deps, receipts):
+            prior = self.db.execute("SELECT * FROM tasks WHERE project_id=? AND local_id=?", (task["project_id"], name)).fetchone()
+            if prior is None:
+                raise EvidenceChangedError("Canonical dependency no longer exists")
+            verified = self.verify_accepted(prior, with_evidence=True, _cache=cache, _ancestry=_ancestry + (task["id"],))
+            if receipt != self.dependency_receipt(prior, verified):
+                raise EvidenceChangedError("Canonical dependency proof changed")
+        artifact_bytes = {}
+        mf = manifest(directory / "artifacts", captured=artifact_bytes)
         if mf["hash"] != task["manifest_hash"]:
             raise EvidenceChangedError("Accepted artifacts changed")
-        checks = json.loads((directory / "checks.json").read_text(encoding="utf-8"))
-        if not checks.get("passed") or not check_files(json.loads(task["spec"]), directory / "artifacts")["passed"]:
+        if evidence["manifest.json"] != mf:
+            raise EvidenceChangedError("Accepted manifest record differs from the actual snapshot")
+        checks = evidence["checks.json"]
+        if not checks.get("passed") or checks != check_files(json.loads(task["spec"]), directory / "artifacts", snapshot=artifact_bytes):
             raise EvidenceChangedError("Accepted program checks are invalid")
-        meta = json.loads((directory / "review-input.json").read_text(encoding="utf-8"))
-        review = json.loads((directory / "review.json").read_text(encoding="utf-8"))
+        meta = evidence["review-input.json"]
+        review = evidence["review.json"]
+        read_snapshot = {k: raw_files[k] for k in ("spec.json", "checks.json")}
+        read_snapshot.update({"artifacts/" + k: v for k, v in artifact_bytes.items()})
+        if "independent-sources.json" in raw_files:
+            read_snapshot["independent-sources.json"] = raw_files["independent-sources.json"]
+        if meta["read_hashes"] != {k: digest(v) for k, v in read_snapshot.items()}:
+            raise EvidenceChangedError("Review read bindings differ from the accepted snapshot")
         self.validate_review(task, {k: review[k] for k in REVIEW_SCHEMA["required"]}, mf, meta["evidence_refs"])
         if review["verdict"] != "PASS" or review.get("reviewer_session_id") != proof["reviewer_session_id"]:
             raise EvidenceChangedError("Accepted reviewer identity or verdict changed")
         if task["reviewer_id"] != proof["reviewer_session_id"] or task["reviewer_id"] == task["session_id"]:
             raise EvidenceChangedError("Accepted reviewer session binding changed")
-        self.verify_read_receipts(directory, meta["read_hashes"])
-        return proof
+        self.verify_read_receipts(directory, meta["read_hashes"], reads=evidence["review-read-receipts.json"], snapshot=read_snapshot)
+        result = {"proof": proof, "spec": effective_spec, "manifest": mf, "checks": checks, "review": review}
+        cache[cache_key] = result
+        return result if with_evidence else proof
+
+    @staticmethod
+    def dependency_receipt(task, verified):
+        return {"task_id": task["id"], "state": task["state"], "artifact_manifest": verified["manifest"],
+                "bound_independent_review": verified["review"], "acceptance_proof_hash": digest(verified["proof"]),
+                "program_checks": verified["checks"]}
 
     def run_one(self):
         self.recover()
@@ -689,16 +742,8 @@ class Controller:
             for dep in spec.get("depends_on", []):
                 prior = self.db.execute("SELECT * FROM tasks WHERE project_id=? AND local_id=?",
                                         (task["project_id"], dep)).fetchone()
-                prior_directory = self.task_dir(prior)
-                prior_proof = self.verify_accepted(prior)
-                prior_review = json.loads((prior_directory / "review.json").read_text(encoding="utf-8"))
-                actual_manifest = manifest(prior_directory / "artifacts")
-                if prior["state"] != "ACCEPTED" or actual_manifest["hash"] != prior["manifest_hash"] or prior_review["verdict"] != "PASS":
-                    raise ValueError("Accepted predecessor evidence has changed")
-                dependency_receipts.append({"task_id": prior["id"], "state": prior["state"],
-                    "artifact_manifest": actual_manifest, "bound_independent_review": prior_review,
-                    "acceptance_proof_hash": digest(prior_proof),
-                    "program_checks": json.loads((prior_directory / "checks.json").read_text(encoding="utf-8"))})
+                verified = self.verify_accepted(prior, with_evidence=True)
+                dependency_receipts.append(self.dependency_receipt(prior, verified))
             clean_spec["controller_dependency_receipts"] = dependency_receipts
             atomic_json(directory / "spec.json", clean_spec)
             worker_input = {"task_id": task["id"], "spec_version": task["spec_version"],
@@ -720,6 +765,8 @@ class Controller:
                       "predecessor reviews and manifests; previous rework describes the old attempt.\n" + encode(worker_input))
             worker = self.invoke(task, "executor", prompt, directory, ARTIFACT_SCHEMA)
             self.assert_owned(task)
+            if (directory / "spec.json").read_bytes() != encode(clean_spec).encode("utf-8"):
+                raise EvidenceChangedError("Canonical specification changed before review")
             if len(worker["text"].encode("utf-8")) > MAX_TOTAL * 2:
                 raise ValueError("Executor result too large")
             mf = self.materialize(task, json.loads(worker["text"]))
@@ -776,7 +823,7 @@ class Controller:
             checks_after = check_files(spec, directory / "artifacts")
             accepted = review["verdict"] == "PASS" and checks_after["passed"]
             atomic_json(directory / "review.json", {**review, "reviewer_session_id": reviewer["session_id"]})
-            proof = self.create_proof(task, directory, mf, reviewer) if accepted else None
+            proof = self.create_proof(task, directory, mf, reviewer, clean_spec) if accepted else None
             if proof is not None:
                 atomic_json(directory / "acceptance.json", proof)
             with self.immediate():
@@ -785,6 +832,7 @@ class Controller:
                 if accepted:
                     self.db.execute("UPDATE tasks SET state='ACCEPTED',error_class=NULL,owner=NULL,lease_until=NULL,acceptance_proof=?,acceptance_proof_hash=? WHERE id=?",
                                     (encode(proof), digest(proof), task["id"]))
+                    self.verify_accepted(self.db.execute("SELECT * FROM tasks WHERE id=?", (task["id"],)).fetchone())
                     self.event(task["project_id"], task["id"], "ACCEPTED_" + str(task["attempt"]))
                 elif review["verdict"] in ("BLOCKED", "INSUFFICIENT_EVIDENCE"):
                     self.decision(task, review["verdict"], owned=True)
@@ -904,10 +952,11 @@ class Controller:
 
     def audit_accepted(self, project=None):
         changed = []
+        cache = {}
         query = "SELECT * FROM tasks WHERE state='ACCEPTED'" + (" AND project_id=?" if project else "")
         for task in self.db.execute(query, (project,) if project else ()).fetchall():
             try:
-                self.verify_accepted(task)
+                self.verify_accepted(task, _cache=cache)
             except (OSError, ValueError, KeyError, TypeError, AttributeError):
                 changed.append(task)
         invalidated = 0

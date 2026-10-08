@@ -150,8 +150,10 @@ class ControllerTests(unittest.TestCase):
         self.run_all()
         task = self.c.db.execute("SELECT * FROM tasks WHERE local_id='csv-demo'").fetchone()
         (self.c.task_dir(task) / "artifacts/facts.csv").write_text("tampered", encoding="utf-8")
-        self.assertEqual(self.c.audit_accepted(pid), 1)
-        self.assertEqual(self.c.status(pid)["tasks"][0]["state"], "NEEDS_DECISION")
+        self.assertEqual(self.c.audit_accepted(pid), 2)
+        states = {task["local_id"]: task["state"] for task in self.c.status(pid)["tasks"]}
+        self.assertNotEqual(states["csv-demo"], "ACCEPTED")
+        self.assertNotEqual(states["next-stage"], "ACCEPTED")
 
     def test_project_turn_budget_is_enforced(self):
         self.c.config["max_project_turns"] = 1

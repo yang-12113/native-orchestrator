@@ -147,6 +147,8 @@ def fake_adapter_run(self, role, model, prompt, cwd, log, schema=None,
             FAKE_STATE["entered"].set()
             if not FAKE_STATE["release"].wait(15):
                 raise TimeoutError("test gate timed out")
+        if FAKE_STATE.get("tamper_executor_spec"):
+            _mutate_file(cwd / "spec.json")
         if FAKE_STATE.get("capture_dependency") and isinstance(payload, dict):
             receipts = payload.get("specification", {}).get("controller_dependency_receipts", [])
             if receipts:
@@ -510,6 +512,31 @@ class HardeningTests(unittest.TestCase):
         self.assertNotIn("captured_dependency", FAKE_STATE)
         self.assertFalse(any(call["task_id"] == project + ":child" for call in FAKE_CALLS))
 
+    def test_tampered_accepted_root_invalidates_all_accepted_descendants(self):
+        c = self.controller("recursive-proof-audit", FAKE_CODEX_CONFIG)
+        spec = {"title": "three-level proof chain", "tasks": [
+            {"id": "root", "objective": "root evidence", "artifacts": ["root.txt"],
+             "checks": [{"kind": "text", "path": "root.txt", "equals": "ok"}]},
+            {"id": "middle", "objective": "middle evidence", "artifacts": ["middle.txt"], "depends_on": ["root"],
+             "checks": [{"kind": "text", "path": "middle.txt", "equals": "ok"}]},
+            {"id": "leaf", "objective": "leaf evidence", "artifacts": ["leaf.txt"], "depends_on": ["middle"],
+             "checks": [{"kind": "text", "path": "leaf.txt", "equals": "ok"}]},
+        ]}
+        project = self._create_project(c, spec, "recursive-proof-audit")
+        for _ in range(8):
+            if not c.run_one():
+                break
+        states = {row["local_id"]: row["state"] for row in c.db.execute(
+            "SELECT local_id,state FROM tasks WHERE project_id=?", (project,))}
+        self.assertEqual(states, {"root": "ACCEPTED", "middle": "ACCEPTED", "leaf": "ACCEPTED"})
+        root = c.db.execute("SELECT * FROM tasks WHERE project_id=? AND local_id='root'", (project,)).fetchone()
+        (c.task_dir(root) / "artifacts/root.txt").write_text("changed root after acceptance", encoding="utf-8")
+        self.assertEqual(c.audit_accepted(project), 3)
+        states = {row["local_id"]: row["state"] for row in c.db.execute(
+            "SELECT local_id,state FROM tasks WHERE project_id=?", (project,))}
+        self.assertEqual(set(states), {"root", "middle", "leaf"})
+        self.assertTrue(all(state != "ACCEPTED" for state in states.values()))
+
     def test_failed_program_check_skips_reviewer_call(self):
         c = self.controller("program-check", MOCK_CONFIG)
         spec = _single_task(mock_result={"artifacts": [{"path": "out.txt", "content": "wrong"}], "note": "fake"})
@@ -694,6 +721,110 @@ class HardeningTests(unittest.TestCase):
                     self.assertNotEqual(states["child"], "ACCEPTED")
                     self.assertEqual(len(FAKE_CALLS), before)
 
+    def test_executor_stage_canonical_spec_rewrite_is_rejected_before_reviewer(self):
+        c = self.controller("executor-spec-tamper", FAKE_CODEX_CONFIG)
+        project = self._create_project(c, _single_task(), "executor-spec-tamper")
+        global FAKE_STATE
+        FAKE_STATE = {"tamper_executor_spec": True}
+        c.run_one()
+        task = c.status(project)["tasks"][0]
+        self.assertEqual(task["attempt"], 1)
+        self.assertNotEqual(task["state"], "ACCEPTED")
+        calls = {row["role"]: row["n"] for row in c.db.execute(
+            "SELECT role,COUNT(*) n FROM calls WHERE task_id LIKE ? GROUP BY role", (project + ":%",))}
+        self.assertEqual(calls.get("executor", 0), 1)
+        self.assertEqual(calls.get("reviewer", 0), 0)
+
+    def test_acceptance_proof_binds_canonical_input_spec_projection(self):
+        c = self.controller("canonical-spec-proof", FAKE_CODEX_CONFIG)
+        spec = _single_task(task_id="canonical", mock_fixture_only="strip from model input")
+        project = self._create_project(c, spec, "canonical-spec-proof")
+        c.run_one()
+        task = c.db.execute("SELECT * FROM tasks WHERE project_id=? AND local_id='canonical'", (project,)).fetchone()
+        self.assertEqual(task["state"], "ACCEPTED")
+        directory = c.task_dir(task)
+        db_spec = json.loads(task["spec"])
+        expected = {key: value for key, value in db_spec.items() if not key.startswith("mock_")}
+        expected["controller_dependency_receipts"] = []
+        canonical = json.loads((directory / "spec.json").read_text(encoding="utf-8"))
+        proof = json.loads(task["acceptance_proof"])
+        self.assertEqual(canonical, expected)
+        self.assertEqual(proof["input_spec_sha256"], orchestrator.digest(expected))
+        self.assertEqual(c.verify_accepted(task), proof)
+
+    def test_dependency_uses_verified_snapshot_without_rereading_or_injecting_review(self):
+        c = self.controller("dependency-snapshot", FAKE_CODEX_CONFIG)
+        spec = {"title": "snapshot dependency", "tasks": [
+            {"id": "source", "objective": "verified source", "artifacts": ["source.txt"],
+             "checks": [{"kind": "text", "path": "source.txt", "equals": "ok"}]},
+            {"id": "child", "objective": "consume verified source", "artifacts": ["child.txt"], "depends_on": ["source"],
+             "checks": [{"kind": "text", "path": "child.txt", "equals": "ok"}]},
+        ]}
+        project = self._create_project(c, spec, "dependency-snapshot")
+        c.run_one()
+        source = c.db.execute("SELECT * FROM tasks WHERE project_id=? AND local_id='source'", (project,)).fetchone()
+        self.assertEqual(source["state"], "ACCEPTED")
+        review_path = c.task_dir(source) / "review.json"
+        original_read_bytes = Path.read_bytes
+        original_read_text = Path.read_text
+        read_counts = {"bytes": 0, "text": 0}
+        guard_active = False
+        forbidden_reads = []
+        forged_review = encode({"task_id": "forged-review", "attempt": 99, "verdict": "PASS"}).encode("utf-8")
+
+        def counted_snapshot_read(path):
+            nonlocal guard_active
+            if path.resolve() == review_path.resolve():
+                read_counts["bytes"] += 1
+                if guard_active:
+                    forbidden_reads.append("bytes")
+                    return forged_review
+            return original_read_bytes(path)
+
+        def refuse_text_review(path, *args, **kwargs):
+            if path.resolve() == review_path.resolve():
+                read_counts["text"] += 1
+                if guard_active:
+                    forbidden_reads.append("text")
+                    return forged_review.decode("utf-8")
+            return original_read_text(path, *args, **kwargs)
+
+        original_verify = c.verify_accepted
+
+        def verify_with_guard(task, *args, **kwargs):
+            nonlocal guard_active
+            result = original_verify(task, *args, **kwargs)
+            if task["id"] == source["id"] and kwargs.get("with_evidence"):
+                guard_active = True
+            return result
+
+        original_invoke = c.invoke
+
+        def invoke_with_guard(task, role, *args, **kwargs):
+            nonlocal guard_active
+            result = original_invoke(task, role, *args, **kwargs)
+            if role == "reviewer":
+                guard_active = False  # Permit the separate acceptance-time revalidation snapshot.
+            return result
+
+        global FAKE_STATE
+        FAKE_STATE = {"capture_dependency": True}
+        c.verify_accepted = verify_with_guard
+        c.invoke = invoke_with_guard
+        with patch.object(c, "audit_accepted", return_value=0), \
+             patch.object(Path, "read_bytes", new=counted_snapshot_read), \
+             patch.object(Path, "read_text", new=refuse_text_review):
+            c.run_one()
+        child = c.db.execute("SELECT state FROM tasks WHERE project_id=? AND local_id='child'", (project,)).fetchone()
+        self.assertEqual(child["state"], "ACCEPTED")
+        self.assertGreaterEqual(read_counts["bytes"], 1)
+        self.assertLessEqual(read_counts["bytes"], 2)
+        self.assertEqual(read_counts["text"], 0)
+        self.assertEqual(forbidden_reads, [])
+        receipt = FAKE_STATE["captured_dependency"]
+        self.assertEqual(receipt["bound_independent_review"]["task_id"], source["id"])
+        self.assertEqual(receipt["bound_independent_review"]["verdict"], "PASS")
+
     def test_legacy_database_preflight_is_read_only_and_preserves_accepted_state(self):
         data = self.root / "legacy-data"
         data.mkdir()
@@ -775,6 +906,25 @@ class HardeningTests(unittest.TestCase):
         self.assertEqual(result["state_version"], after["state_version"])
         with self.assertRaisesRegex(ValueError, "STALE_STATE_CURSOR"):
             c.resume_summary(project, decision_cursor=0, limit=10, state_version=before["state_version"])
+
+    def test_duplicate_submit_planning_attachment_advances_state_version(self):
+        c = self.controller("planning-duplicate-version", MOCK_CONFIG)
+        spec = _single_task(task_id="planned")
+        project = self._create_project(c, spec, "duplicate-planning-key")
+        before = c.status(project)
+        planning_id = "planning-" + "c" * 16
+        c.reserve_call(planning_id, planning_id + ":planning", "master", "gpt-6.1-sol")
+        duplicate = c.submit(spec, "duplicate-planning-key", planning_id=planning_id)
+        self.assertTrue(duplicate["duplicate"])
+        self.assertEqual(duplicate["project_id"], project)
+        after = c.status(project)
+        self.assertGreater(after["state_version"], before["state_version"])
+        attached = c.db.execute("SELECT project_id,task_id,kind FROM events WHERE project_id=? AND kind LIKE 'PLANNING_ATTACHED_%'",
+                                (project,)).fetchall()
+        self.assertEqual(len(attached), 1)
+        self.assertEqual(attached[0]["task_id"], project + ":planning")
+        with self.assertRaisesRegex(ValueError, "STALE_STATE_CURSOR"):
+            c.status(project, cursor=0, limit=20, state_version=before["state_version"])
 
 
 if __name__ == "__main__":
