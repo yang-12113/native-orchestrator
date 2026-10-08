@@ -1,0 +1,1 @@
+在独立目录完成一个本地文件任务：生成 verification.txt，内容严格为 NATIVE_PIPELINE_OK，不带换行。必须由独立监察者读取实际文件后验收。

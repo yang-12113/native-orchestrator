@@ -1,0 +1,181 @@
+{
+  "overall_status": "PARTIAL",
+  "verified_at": "2026-10-06T20:11:15.853743+08:00",
+  "timezone": "Asia/Shanghai",
+  "source_version": "0.2.0",
+  "source_sha256": "0a820078f6c55377a4e2735cc18c12b17fb83d17453388b0630d3e39a8543899",
+  "platform": "Windows 10.0.26200",
+  "runtime": "Python 3.14.7 / Codex 0.160.1 / WorkBuddy AI 5.6.2 / ZCode CLI 0.16.9",
+  "checks": [
+    {
+      "id": "T01",
+      "result": "PARTIAL",
+      "evidence_status": "LIVE_VERIFIED",
+      "notes": "Codex and native WorkBuddy exact model routes LIVE; ZCode entitlement LIVE, independent call SERVICE_GUARD",
+      "evidence": "evidence/validation-summary.json"
+    },
+    {
+      "id": "T02",
+      "result": "PASS",
+      "evidence_status": "LIVE_VERIFIED",
+      "notes": "new threads; distinct worker/reviewer IDs; no fork",
+      "evidence": "evidence/validation-summary.json"
+    },
+    {
+      "id": "T03",
+      "result": "PARTIAL",
+      "evidence_status": "MOCK_VERIFIED",
+      "notes": "55k Unicode worker output outside master; native master messages separately audited",
+      "evidence": "evidence/validation-summary.json"
+    },
+    {
+      "id": "T04",
+      "result": "PASS",
+      "evidence_status": "LIVE_VERIFIED",
+      "notes": "actual MCP wire bounded and valid JSON",
+      "evidence": "evidence/validation-summary.json"
+    },
+    {
+      "id": "T05",
+      "result": "PASS",
+      "evidence_status": "MOCK_VERIFIED",
+      "notes": "fake completion/missing artifacts never ACCEPTED",
+      "evidence": "evidence/validation-summary.json"
+    },
+    {
+      "id": "T06",
+      "result": "PASS",
+      "evidence_status": "MOCK_VERIFIED",
+      "notes": "automatic quality rework; native insufficient dependency evidence also refused",
+      "evidence": "evidence/validation-summary.json"
+    },
+    {
+      "id": "T07",
+      "result": "PARTIAL",
+      "evidence_status": "LIVE_VERIFIED",
+      "notes": "capability mutation/traversal denied; normal read pass; OS write/read contrast UNKNOWN",
+      "evidence": "evidence/validation-summary.json"
+    },
+    {
+      "id": "T08",
+      "result": "PASS",
+      "evidence_status": "MOCK_VERIFIED",
+      "notes": "transactional leases across two controllers; native parallel routes not stress-tested",
+      "evidence": "evidence/validation-summary.json"
+    },
+    {
+      "id": "T09",
+      "result": "PASS",
+      "evidence_status": "MOCK_VERIFIED",
+      "notes": "real background process completed without observer; model replaced",
+      "evidence": "evidence/validation-summary.json"
+    },
+    {
+      "id": "T10",
+      "result": "PARTIAL",
+      "evidence_status": "MOCK_VERIFIED",
+      "notes": "real process kill/restart; ambiguous task needs reconciliation; ephemeral native session not resumed",
+      "evidence": "evidence/validation-summary.json"
+    },
+    {
+      "id": "T11",
+      "result": "PASS",
+      "evidence_status": "LIVE_VERIFIED",
+      "notes": "same natural request ID reused with no additional native calls; durable mock duplicates",
+      "evidence": "evidence/validation-summary.json"
+    },
+    {
+      "id": "T12",
+      "result": "PARTIAL",
+      "evidence_status": "MOCK_VERIFIED",
+      "notes": "bounded errors/budget/no paid fallback; no deliberate exhaustion of real entitlement",
+      "evidence": "evidence/validation-summary.json"
+    },
+    {
+      "id": "T13",
+      "result": "PASS",
+      "evidence_status": "LIVE_VERIFIED",
+      "notes": "native PASS with incorrect manifest hash rejected; malformed mock review refused",
+      "evidence": "evidence/validation-summary.json"
+    },
+    {
+      "id": "T14",
+      "result": "PARTIAL",
+      "evidence_status": "SOURCE_CONFIRMED",
+      "notes": "effective memory config off and independent homes; global backend memory sources not fully observable",
+      "evidence": "evidence/validation-summary.json"
+    },
+    {
+      "id": "T15",
+      "result": "PASS",
+      "evidence_status": "LIVE_VERIFIED",
+      "notes": "fresh Sol receives bounded accepted state and gives version-bound action",
+      "evidence": "evidence/validation-summary.json"
+    },
+    {
+      "id": "T16",
+      "result": "PASS",
+      "evidence_status": "LIVE_VERIFIED",
+      "notes": "actual CSV and separate official HTTP refetch independently read",
+      "evidence": "evidence/validation-summary.json"
+    },
+    {
+      "id": "T17",
+      "result": "PASS",
+      "evidence_status": "MOCK_VERIFIED",
+      "notes": "injection text cannot alter state machine; real constrained capability also checked",
+      "evidence": "evidence/validation-summary.json"
+    },
+    {
+      "id": "T18",
+      "result": "PASS",
+      "evidence_status": "LIVE_VERIFIED",
+      "notes": "turns/tokens/reply bytes measured; missing monetary/request costs UNKNOWN",
+      "evidence": "evidence/validation-summary.json"
+    }
+  ],
+  "native_channels_verified": [
+    {
+      "role": "master",
+      "client": "codex",
+      "model": "gpt-6.1-sol",
+      "entitlement": "existing ChatGPT Plus"
+    },
+    {
+      "role": "independent reviewer",
+      "client": "codex",
+      "model": "gpt-6-luna",
+      "entitlement": "existing ChatGPT Plus"
+    },
+    {
+      "role": "executor",
+      "client": "WorkBuddy AI native CLI",
+      "model": "deepseek-v4.1-flash",
+      "native_credit": 0,
+      "free_until": "2026-10-10T00:00:00+08:00"
+    }
+  ],
+  "unknown_entitlements": [
+    "ZCode remaining balance is not verified; active grant is verified but independent model execution is blocked"
+  ],
+  "unresolved": [
+    "B02-Z server guard",
+    "B05/B09 residual observation",
+    "B13 unimplemented scope"
+  ],
+  "master_limits": {
+    "serialized_reply_bytes": 8192,
+    "summary_unicode_chars": 400,
+    "explicit_evidence_excerpt_bytes": 2048
+  },
+  "credential_files_in_shareable_bundle": false,
+  "recover_from": "README.md and data-live/state.sqlite",
+  "current_native_evidence": "evidence/native-channel-update.json",
+  "usage_guides": {
+    "human": "使用说明_给用户.md",
+    "ai": "使用说明_给AI.md",
+    "watcher": "watch_project.py",
+    "validation": "evidence/usage-guide-tests.json",
+    "native_model_calls_for_guide_checks": 0
+  }
+}

@@ -1,0 +1,10 @@
+{
+  "title": "独立官网来源核查",
+  "tasks": [{
+    "id": "release-fact",
+    "objective": "从任务提供的 ZCode 官方更新页生成 release.csv，列为version,release_date；只生成一行：version为3.14.4，release_date为2026-09-29。监察必须独立读取实际CSV和控制器第二次HTTP读取的官网证据。",
+    "artifacts": ["release.csv"],
+    "sources": [{"id": "zcode-official-changelog", "url": "https://zcode.z.ai/cn/changelog", "required_terms": ["3.14.4", "2026年9月29日"]}],
+    "checks": [{"id": "release-values", "kind": "csv", "path": "release.csv", "columns": ["version", "release_date"], "rows": 1, "unique": ["version"], "expected_records": [{"version": "3.14.4", "release_date": "2026-09-29"}]}]
+  }]
+}

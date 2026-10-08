@@ -1,0 +1,126 @@
+{
+  "schema_version": "native-orchestrator.execution-contract/0.3-draft",
+  "status": "DESIGN_ONLY",
+  "dispatchable": false,
+  "runtime_implemented": false,
+  "authorization": {
+    "scope": "Plan optimization in this turn",
+    "execution_authorized_for_this_example": false,
+    "requirement": "Bind direct user task scope, exact inputs, paths and budget before implementation or execution"
+  },
+  "project": {
+    "project_id": "example-controller-interface-fixes",
+    "spec_version": 1,
+    "project_root": "E:/零碎/native-orchestrator",
+    "execution_mode": "managed_repo_v03",
+    "authority": "controller SQLite",
+    "base_input_manifest_sha256": null,
+    "baseline_status": "MUST_FREEZE_BEFORE_DISPATCH"
+  },
+  "task": {
+    "task_id": "fix-large-project-interfaces",
+    "request_id": "example-controller-interface-fixes-v1",
+    "task_kind": "repo_patch",
+    "objective": "After implementation authorization, fix status pagination, unresolved decision recovery pagination and role reasoning-effort forwarding.",
+    "required_capabilities": [
+      "read_frozen_project_files",
+      "scoped_repo_patch",
+      "approved_program_checks",
+      "independent_readonly_review"
+    ],
+    "route_capabilities_verified": false,
+    "paths": {
+      "source_root": "E:/零碎/native-orchestrator",
+      "execution_root": "E:/零碎/native-orchestrator/data-v03-proposed/workspaces/fix-large-project-interfaces",
+      "review_snapshot_root": "E:/零碎/native-orchestrator/data-v03-proposed/review-views/fix-large-project-interfaces",
+      "review_scratch_root": "E:/零碎/native-orchestrator/data-v03-proposed/review-scratch/fix-large-project-interfaces",
+      "allowed_relative_changes": [
+        "orchestrator.py",
+        "codex_adapter.py",
+        "test_controller.py",
+        "test_native_adapters.py"
+      ],
+      "protected_relative_paths": [
+        "data-live",
+        ".runtime",
+        "config.live.json",
+        "ACCEPTANCE.json"
+      ]
+    },
+    "routes": {
+      "executor": {
+        "client": "codex",
+        "requested_model": "gpt-6-luna",
+        "requested_effort": "max",
+        "observed_model": null,
+        "observed_effort": null
+      },
+      "reviewer": {
+        "client": "codex",
+        "requested_model": "gpt-6-luna",
+        "requested_effort": "max",
+        "observed_model": null,
+        "observed_effort": null
+      },
+      "master": {
+        "client": "codex",
+        "requested_model": "gpt-6.1-sol",
+        "requested_effort": "ultra",
+        "observed_model": null,
+        "observed_effort": null
+      },
+      "paid_api_fallback_allowed": false,
+      "silent_model_or_effort_fallback_allowed": false
+    },
+    "checks": [
+      {
+        "id": "status-100-tasks",
+        "kind": "approved_program_check",
+        "expectation": "Complete valid JSON pages for 100 allowed task IDs within the transport budget."
+      },
+      {
+        "id": "unresolved-decisions",
+        "kind": "approved_program_check",
+        "expectation": "Ten resolved older decisions cannot hide a newer unresolved decision; expose all unresolved decisions through pagination."
+      },
+      {
+        "id": "native-effort",
+        "kind": "native_parameter_audit",
+        "expectation": "Forward and verify requested effort; reject unsupported effort before dispatch."
+      },
+      {
+        "id": "review-readonly",
+        "kind": "real_permission_probe",
+        "expectation": "Reviewer cannot modify frozen artifacts or controller authority; isolate permitted scratch writes."
+      }
+    ],
+    "approved_check_catalog": [],
+    "check_catalog_status": "MUST_DEFINE_AND_VALIDATE_BEFORE_DISPATCH",
+    "budget": {
+      "max_total_native_role_turns": 60,
+      "max_master_role_turns": 4,
+      "max_reworks_per_task": 2,
+      "minimum_role_turn_estimate": 4,
+      "max_business_reply_bytes": 8192,
+      "max_summary_unicode_codepoints": 400,
+      "max_evidence_excerpt_bytes": 2048,
+      "max_cumulative_master_business_reply_bytes": 49152,
+      "model_builtin_context_accounted_separately": true
+    },
+    "result_binding": {
+      "task_id_required": true,
+      "spec_version_required": true,
+      "attempt_required": true,
+      "input_manifest_sha256_required": true,
+      "artifact_manifest_sha256_required": true,
+      "reviewer_session_id_required": true,
+      "program_check_receipts_required": true
+    },
+    "permissions": {
+      "worker_scope_enforced": false,
+      "review_snapshot_readonly_verified": false,
+      "memory_settings_verified": false,
+      "unknown_dispatch_policy": "RECONCILE_BEFORE_RETRY"
+    }
+  }
+}

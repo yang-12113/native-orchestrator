@@ -1,0 +1,1 @@
+生成 verification.txt，内容严格为 WORKBUDDY_PIPELINE_OK，不带换行。由独立监察者读取实际文件后验收。

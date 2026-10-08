@@ -1,0 +1,6 @@
+{
+  "executor": {"client": "mock", "model": "mock-executor", "entitlement_status": "UNKNOWN", "allow_unapproved_paid_fallback": false},
+  "reviewer": {"client": "mock", "model": "mock-reviewer", "entitlement_status": "UNKNOWN", "allow_unapproved_paid_fallback": false},
+  "max_reworks": 2,
+  "timeout_seconds": 180
+}
