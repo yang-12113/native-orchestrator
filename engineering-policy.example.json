@@ -1,0 +1,78 @@
+{
+  "schema_version": "native-orchestrator.engineering-policy/0.3",
+  "runtime_enabled": false,
+  "authorization_ref": "user:engineering-demo",
+  "approved_repo_roots": [
+    "E:/零碎/native-orchestrator-v03/.runtime/engineering-demo"
+  ],
+  "protected_paths": [
+    ".git",
+    ".runtime",
+    "data-live",
+    "config.live.json",
+    "MAINLINE.md",
+    "DEVELOPMENT_STATE.json"
+  ],
+  "routes": {
+    "executor": {
+      "client": "codex",
+      "model": "gpt-6-luna",
+      "native_version": "0.162.0-alpha.2",
+      "supported_efforts": [
+        "max"
+      ],
+      "capabilities": [
+        "repo_read",
+        "file_proposal"
+      ],
+      "verification": "UNKNOWN",
+      "evidence_sha256": "0000000000000000000000000000000000000000000000000000000000000000"
+    },
+    "reviewer": {
+      "client": "codex",
+      "model": "gpt-6-luna",
+      "native_version": "0.162.0-alpha.2",
+      "supported_efforts": [
+        "max"
+      ],
+      "capabilities": [
+        "repo_read",
+        "bound_review"
+      ],
+      "verification": "UNKNOWN",
+      "evidence_sha256": "0000000000000000000000000000000000000000000000000000000000000000"
+    }
+  },
+  "runner": {
+    "capabilities": [
+      "approved_checks"
+    ],
+    "verification": "UNKNOWN",
+    "evidence_sha256": "0000000000000000000000000000000000000000000000000000000000000000"
+  },
+  "check_catalog": {
+    "unit": {
+      "argv": [
+        "E:/python/python.exe",
+        "-B",
+        "-m",
+        "unittest",
+        "-q"
+      ],
+      "timeout_seconds": 120,
+      "write_scope": "scratch",
+      "network": "disabled",
+      "shell": false,
+      "verification": "UNKNOWN",
+      "evidence_sha256": "0000000000000000000000000000000000000000000000000000000000000000"
+    }
+  },
+  "limits": {
+    "max_native_turns": 60,
+    "max_master_turns": 4,
+    "max_reworks": 2,
+    "max_reply_bytes": 8192,
+    "max_summary_chars": 400,
+    "max_evidence_excerpt_bytes": 2048
+  }
+}

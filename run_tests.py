@@ -16,7 +16,7 @@ def main():
     args = parser.parse_args()
     modules = [__import__(name) for name in (
         "test_controller", "test_native_adapters", "test_watch_project",
-        "test_hardening", "test_codex_protocol")]
+        "test_hardening", "test_codex_protocol", "test_execution_contract")]
     with tempfile.TemporaryDirectory(prefix="native-controller-tests-", dir=ROOT) as directory:
         isolated = Path(directory)
         (isolated / ".runtime").mkdir()
@@ -27,6 +27,7 @@ def main():
         result = unittest.TextTestRunner(verbosity=2).run(suite)
     report = {"evidence_status": "MOCK_VERIFIED", "python": platform.python_version(),
               "tests_run": result.testsRun, "failures": len(result.failures), "errors": len(result.errors),
+              "skipped": len(result.skipped),
               "passed": result.wasSuccessful(), "formal_runtime_or_delivery_evidence_modified": False,
               "native_model_calls": 0}
     target = Path(args.report).resolve()

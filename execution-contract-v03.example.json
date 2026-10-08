@@ -1,0 +1,39 @@
+{
+  "schema_version": "native-orchestrator.execution-contract/0.3",
+  "project_id": "engineering-demo",
+  "task_id": "fix-add",
+  "request_id": "engineering-demo-v1",
+  "spec_version": 1,
+  "authorization_ref": "user:engineering-demo",
+  "input": {
+    "repo_root": "E:/零碎/native-orchestrator-v03/.runtime/engineering-demo",
+    "base_commit": "0000000000000000000000000000000000000000"
+  },
+  "allowed_changes": [
+    "calculator.py"
+  ],
+  "routes": {
+    "executor": {
+      "client": "codex",
+      "model": "gpt-6-luna",
+      "reasoning_effort": "max",
+      "native_version": "0.162.0-alpha.2"
+    },
+    "reviewer": {
+      "client": "codex",
+      "model": "gpt-6-luna",
+      "reasoning_effort": "max",
+      "native_version": "0.162.0-alpha.2"
+    }
+  },
+  "check_ids": [
+    "unit"
+  ],
+  "budget": {
+    "max_native_turns": 60,
+    "max_master_turns": 4,
+    "max_reworks": 2,
+    "planning_turns": 0,
+    "notification_turns": 1
+  }
+}
