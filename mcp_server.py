@@ -11,7 +11,7 @@ TOOLS = [
     {"name": "get_project_delta", "description": "Read bounded status changes. Execution logs are not returned.",
      "inputSchema": {"type": "object", "properties": {"project_id": {"type": "string"}, "cursor": {"type": "integer", "minimum": 0}}, "required": ["project_id"], "additionalProperties": False}},
     {"name": "get_resume_state", "description": "Load bounded accepted state for a fresh master conversation.",
-     "inputSchema": {"type": "object", "properties": {"project_id": {"type": "string"}}, "required": ["project_id"], "additionalProperties": False}},
+     "inputSchema": {"type": "object", "properties": {"project_id": {"type": "string"}, "decision_cursor": {"type": "integer", "minimum": 0}, "limit": {"type": "integer", "minimum": 1, "maximum": 50}, "state_version": {"type": "integer", "minimum": 0}}, "required": ["project_id"], "additionalProperties": False}},
     {"name": "get_decision_request", "description": "Read one persisted concrete decision request.",
      "inputSchema": {"type": "object", "properties": {"decision_id": {"type": "string"}}, "required": ["decision_id"], "additionalProperties": False}},
     {"name": "resolve_decision", "description": "Explicitly resolve one request within the existing retry budget.",
@@ -26,7 +26,7 @@ def dispatch(c, name, args):
     if name == "get_project_delta":
         return c.delta(args["project_id"], args.get("cursor", 0))
     if name == "get_resume_state":
-        return c.resume_summary(args["project_id"])
+        return c.resume_summary(args["project_id"], args.get("decision_cursor", 0), args.get("limit", 10), args.get("state_version"))
     if name == "resolve_decision":
         return c.resolve(args["decision_id"], args["action"])
     if name == "query_evidence":

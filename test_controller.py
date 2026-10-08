@@ -33,7 +33,7 @@ class ControllerTests(unittest.TestCase):
         status = self.c.status(pid)
         self.assertEqual([x["state"] for x in status["tasks"]], ["ACCEPTED", "ACCEPTED"])
         self.assertEqual([x["attempt"] for x in status["tasks"]], [2, 1])
-        self.assertEqual(status["calls"], {"executor": 3, "reviewer": 3})
+        self.assertEqual(status["calls"], {"executor": 3, "reviewer": 2})
         tasks = self.c.db.execute("SELECT session_id,reviewer_id FROM tasks").fetchall()
         self.assertTrue(all(t[0] != t[1] for t in tasks))
 
@@ -100,7 +100,7 @@ class ControllerTests(unittest.TestCase):
         try:
             self.assertEqual(c2.recover(), 0)
             self.assertFalse(c2.run_one())
-            self.assertEqual(c2.status(pid)["calls"], {"executor": 3, "reviewer": 3})
+            self.assertEqual(c2.status(pid)["calls"], {"executor": 3, "reviewer": 2})
         finally:
             c2.db.close()
 

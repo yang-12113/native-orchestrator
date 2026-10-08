@@ -1,12 +1,14 @@
-# 原生协作控制器 v0.2.0
+# 原生协作控制器 v0.2.1 / PARTIAL
 
-2026-10-07 计划优化已交付，运行时仍为 v0.2.0 / PARTIAL：[优化计划](E:/零碎/native-orchestrator/项目计划优化_2026-10-07.md)、[AI短契约](E:/零碎/native-orchestrator/执行契约_给AI_v0.3.md)、[当前业务收尾提示](E:/零碎/native-orchestrator/当前对话收尾指令.md)。新增工程能力和权限关卡尚未实现；不要把计划当成已经可用的功能。
+2026-10-08 底座修复及验收见 [HARDENING_VALIDATION.md](E:/零碎/native-orchestrator/HARDENING_VALIDATION.md)。状态/决策分页、过期尝试隔离、事务预算、完整证据校验、决策通知与思考档下传已实施；v0.3 工程能力和权限关卡仍待实现，见 [优化计划](E:/零碎/native-orchestrator/项目计划优化_2026-10-07.md)。
+
+旧 data-live 和 ACCEPTANCE.json 是 v0.2 历史证据，未迁移或重跑。先按验收文档复制旧状态并对账，再决定启用新版；不能把旧 ACCEPTED 当作已经具备新 proof。
 
 快速入门：[给用户看的使用说明](/E:/零碎/native-orchestrator/使用说明_给用户.md)；让其他 AI 接手：[给 AI 的操作说明](/E:/零碎/native-orchestrator/使用说明_给AI.md)。等待验收使用 watch_project.py，提交命令退出不等于成果已验收。
 
 交付状态 **PARTIAL**。默认流程已真实跑通：Sol 规划 → WorkBuddy AI 的 DeepSeek-V4.1-Flash 免费原生执行 → 独立 Luna 回读监察 → Sol 回报。ZCode 当前权益已确认，独立请求仍被服务端限制；见 NATIVE_CHANNEL_UPDATE.md。
 
-项目：`E:\零碎\native-orchestrator`。使用本机 Python、Codex 0.160.0/0.160.1、现有 ChatGPT Plus 和 WorkBuddy AI 5.6.2。config.live.json 已默认 WorkBuddy 免费执行；config.codex.json 保留原 Codex 路线。原软件设置未改，不自动引入新付费 API。
+项目：`E:\零碎\native-orchestrator`。保留旧已验证 Codex 0.160.0/0.160.1，并核对当前 0.162.0-alpha.2 协议；未来版本需重新验证。使用现有 ChatGPT 订阅和 WorkBuddy AI 5.6.2；config.live.json 的旧路由不变。Codex 路由可指定 `reasoning_effort`，例如 `max`；目录不支持或实际档位不匹配即停止。
 
 ## 一次交代并执行
 
@@ -51,9 +53,11 @@ Codex 角色使用独立 CODEX_HOME，关闭 memory 使用/生成、共享 MCP�
 ## 复验和可选 MCP
 
 ```powershell
-python 'E:\零碎\native-orchestrator\test_controller.py'
+python -B 'E:\零碎\native-orchestrator\run_tests.py' --report 'E:\零碎\native-orchestrator\.runtime\regression-report.json'
 python 'E:\零碎\native-orchestrator\check_processes.py'
 python 'E:\零碎\native-orchestrator\check_mcp.py'
 ```
 
 `mcp_server.py --data <目录>` 提供 6 个主脑工具，含显式查询特定证据的 2 KiB 摘录；不提供原始日志。启动程序等待不是模型轮询。未更改用户 Codex 的全局 MCP 配置；可先直接用上面的脚本。源码固定版本记录和参考教程见 ARCHITECTURE_DECISION.md。
+
+大项目用 `status <project_id> --cursor <next_cursor> --state-version <state_version>` 翻页；决策用 `resume` 的相同参数，MCP get_resume_state 使用 decision_cursor/limit/state_version。has_more 为真时继续；STALE_STATE_CURSOR 要从 0 重读。报告只列未解决决策，watcher 另给剩余数量和下一游标。主脑通知不等待独立任务结束，并受项目与主脑回合预算约束。

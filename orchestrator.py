@@ -5,8 +5,10 @@ SQLite is the sole authority. Transcripts never enter status/delta responses.
 """
 import argparse
 import csv
+import errno
 import hashlib
 import io
+import inspect
 import json
 import os
 import re
@@ -15,6 +17,7 @@ import sys
 import threading
 import time
 import uuid
+from contextlib import contextmanager
 from pathlib import Path
 from codex_adapter import CodexAdapter
 
@@ -23,6 +26,16 @@ MAX_REPLY = 8192
 MAX_ARTIFACT = 1024 * 1024
 MAX_TOTAL = 4 * MAX_ARTIFACT
 TERMINAL = {"ACCEPTED", "NEEDS_DECISION", "CANCELLED"}
+ACTIVE = {"EXECUTING", "REVIEWING"}
+ACCEPTANCE_POLICY = "bound-evidence-v1"
+
+
+class LeaseLostError(RuntimeError):
+    """A stale execution has no authority to change the current task."""
+
+
+class EvidenceChangedError(ValueError):
+    """The current files do not match the evidence that was checked."""
 
 
 def encode(value):
@@ -120,11 +133,15 @@ def check_files(spec, directory):
             result["passed"] = True
         except (OSError, ValueError, KeyError, UnicodeError) as e:
             result["error"] = str(e)[:300]
+            if isinstance(e, OSError) and e.errno in (errno.EACCES, errno.EPERM, errno.EIO, errno.ENOSPC, errno.EROFS):
+                result["error_class"] = "CHECK_ENVIRONMENT_ERROR"
         results.append(result)
     for required in spec["artifacts"]:
         if not safe_child(directory, required).is_file():
             results.append({"id": "required:" + required, "passed": False, "error": "Missing artifact"})
-    return {"passed": bool(results) and all(x["passed"] for x in results), "checks": results}
+    passed = bool(results) and all(x["passed"] for x in results)
+    return {"passed": passed, "checks": results,
+            "status": "PASS" if passed else "ERROR" if any(x.get("error_class") == "CHECK_ENVIRONMENT_ERROR" for x in results) else "FAIL"}
 
 
 ARTIFACT_SCHEMA = {"type": "object", "properties": {
@@ -181,6 +198,53 @@ class Controller:
         ''')
         self.db.commit()
         self.owner = str(uuid.uuid4())
+        with self.immediate():
+            columns = {r[1] for r in self.db.execute("PRAGMA table_info(tasks)")}
+            for name in ("acceptance_proof", "acceptance_proof_hash"):
+                if name not in columns:
+                    self.db.execute("ALTER TABLE tasks ADD COLUMN " + name + " TEXT")
+
+    @contextmanager
+    def immediate(self):
+        """Acquire the writer lock before checking authority or reserving budget."""
+        if self.db.in_transaction:
+            yield self.db
+            return
+        self.db.execute("BEGIN IMMEDIATE")
+        try:
+            yield self.db
+            self.db.commit()
+        except BaseException:
+            self.db.rollback()
+            raise
+
+    def assert_owned(self, task, connection=None):
+        current = (connection or self.db).execute("SELECT * FROM tasks WHERE id=?", (task["id"],)).fetchone()
+        if (current is None or current["owner"] != self.owner
+                or current["attempt"] != task["attempt"]
+                or current["spec_version"] != task["spec_version"]
+                or current["spec"] != task["spec"]
+                or current["state"] not in ACTIVE
+                or current["lease_until"] is None or current["lease_until"] <= time.time()):
+            raise LeaseLostError("Task ownership or specification changed")
+        return current
+
+    def reserve_call(self, project, task_id, role, model, task=None):
+        with self.immediate():
+            if task is not None:
+                self.assert_owned(task)
+            used = self.db.execute("SELECT COUNT(*) FROM calls WHERE task_id LIKE ?", (project + ":%",)).fetchone()[0]
+            if used >= self.config.get("max_project_turns", 60):
+                raise RuntimeError("BUDGET_EXHAUSTED: project native turn cap reached")
+            if role == "master":
+                masters = self.db.execute("SELECT COUNT(*) FROM calls WHERE task_id LIKE ? AND role='master'", (project + ":%",)).fetchone()[0]
+                if masters >= self.config.get("max_master_turns", 4):
+                    raise RuntimeError("BUDGET_EXHAUSTED: master turn cap reached")
+            call_id = self.db.execute("INSERT INTO calls(task_id,role,model,started) VALUES(?,?,?,?)",
+                (task_id, role, model, time.time())).lastrowid
+            if role != "master":
+                self.event(project, task_id, "CALL_RESERVED_" + str(call_id))
+            return call_id
 
     def event(self, project, task, kind):
         self.db.execute("INSERT OR IGNORE INTO events(project_id,task_id,kind,created) VALUES(?,?,?,?)",
@@ -196,6 +260,8 @@ class Controller:
             raise ValueError("Invalid or duplicate task ids")
         graph = {}
         for task in spec["tasks"]:
+            if task.get("task_kind", "artifact_text") not in ("artifact_text", "public_source"):
+                raise ValueError("Unsupported task kind; repo_patch requires the unimplemented v0.3 runtime")
             if not isinstance(task.get("objective"), str) or len(task["objective"]) > 12000:
                 raise ValueError("Invalid objective")
             if not task.get("artifacts") or len(set(task["artifacts"])) != len(task["artifacts"]):
@@ -250,16 +316,34 @@ class Controller:
     def task_dir(self, task):
         return self.data / "projects" / task["project_id"] / task["local_id"] / str(task["attempt"])
 
-    def decision(self, task, reason):
-        self.db.execute("UPDATE tasks SET state='NEEDS_DECISION',error_class=?,owner=NULL,lease_until=NULL WHERE id=?",
-                        (reason, task["id"]))
-        self.db.execute("INSERT OR IGNORE INTO decisions VALUES(?,?,?,?,0,NULL)",
-                        (task["id"] + ":" + str(task["attempt"]), task["project_id"], task["id"], reason))
-        self.event(task["project_id"], task["id"], "DECISION_" + str(task["attempt"]))
+    def decision(self, task, reason, owned=False):
+        with self.immediate():
+            current = self.db.execute("SELECT * FROM tasks WHERE id=?", (task["id"],)).fetchone()
+            if (current is None or current["attempt"] != task["attempt"]
+                    or current["spec_version"] != task["spec_version"]
+                    or current["spec"] != task["spec"] or current["owner"] != task["owner"]):
+                return False
+            if owned:
+                try:
+                    self.assert_owned(task)
+                except LeaseLostError:
+                    return False
+            elif current["state"] != task["state"]:
+                return False
+            changed = self.db.execute("UPDATE tasks SET state='NEEDS_DECISION',error_class=?,owner=NULL,lease_until=NULL "
+                "WHERE id=? AND attempt=? AND spec_version=? AND owner IS ? AND state=?",
+                (reason, task["id"], task["attempt"], task["spec_version"], current["owner"], current["state"]))
+            if changed.rowcount != 1:
+                return False
+            self.db.execute("INSERT INTO decisions VALUES(?,?,?,?,0,NULL) "
+                "ON CONFLICT(id) DO UPDATE SET reason=excluded.reason,resolved=0,resolution=NULL",
+                (task["id"] + ":" + str(task["attempt"]), task["project_id"], task["id"], reason))
+            self.event(task["project_id"], task["id"], "DECISION_" + str(task["attempt"]) + "_" + digest(reason)[:16])
+            return True
 
     def recover(self):
         # A live owner is never stolen. Ambiguous dispatches are NEVER silently replayed.
-        with self.db:
+        with self.immediate():
             expired = self.db.execute("SELECT * FROM tasks WHERE state IN ('EXECUTING','REVIEWING') AND lease_until<?",
                                       (time.time(),)).fetchall()
             for task in expired:
@@ -292,18 +376,14 @@ class Controller:
 
     def invoke(self, task, role, prompt, cwd, schema):
         route = self.config[role]
-        used = self.db.execute("SELECT COUNT(*) FROM calls WHERE task_id LIKE ?", (task["project_id"] + ":%",)).fetchone()[0]
-        if used >= self.config.get("max_project_turns", 60):
-            raise RuntimeError("BUDGET_EXHAUSTED: project native turn cap reached")
         directory = self.task_dir(task)
         log = directory / (role + "-events.jsonl")
-        with self.db:
-            call_id = self.db.execute("INSERT INTO calls(task_id,role,model,started) VALUES(?,?,?,?)",
-                (task["id"], role, route["model"], time.time())).lastrowid
+        call_id = self.reserve_call(task["project_id"], task["id"], role, route["model"], task)
         def session(sid):
             col = "session_id" if role == "executor" else "reviewer_id"
-            with self.db:
-                self.db.execute("UPDATE tasks SET " + col + "=? WHERE id=? AND owner=?", (sid, task["id"], self.owner))
+            with self.immediate():
+                self.assert_owned(task)
+                self.db.execute("UPDATE tasks SET " + col + "=? WHERE id=? AND owner=? AND attempt=?", (sid, task["id"], self.owner, task["attempt"]))
                 self.db.execute("UPDATE calls SET session_id=? WHERE id=?", (sid, call_id))
         if route["client"] == "mock":
             sid = "mock-" + role + "-" + uuid.uuid4().hex
@@ -317,6 +397,12 @@ class Controller:
                     payload = payload[min(task["attempt"] - 1, len(payload) - 1)]
             else:
                 meta = json.loads((directory / "review-input.json").read_text(encoding="utf-8"))
+                reads = []
+                for path in meta["read_hashes"]:
+                    receipt = self.read_review_file(directory, {"tool": "read_review_file", "arguments": {"path": path}})
+                    read = json.loads(receipt["contentItems"][0]["text"])
+                    reads.append({k: read[k] for k in ("path", "bytes", "sha256")})
+                atomic_json(directory / "review-read-receipts.json", reads)
                 actual = check_files(spec, directory / "artifacts")
                 payload = {**{k: meta[k] for k in ("task_id", "spec_version", "attempt", "artifact_manifest_hash")},
                     "verdict": "PASS" if actual["passed"] else "NEEDS_CHANGES",
@@ -340,6 +426,13 @@ class Controller:
             if role == "reviewer":
                 reads = []
                 def read_handler(params):
+                    # RPC callbacks run on a reader thread, so use a separate observation connection.
+                    observer = sqlite3.connect((self.data / "state.sqlite").as_uri() + "?mode=ro", uri=True, timeout=15)
+                    observer.row_factory = sqlite3.Row
+                    try:
+                        self.assert_owned(task, observer)
+                    finally:
+                        observer.close()
                     try:
                         result = self.read_review_file(directory, params)
                         receipt = json.loads(result["contentItems"][0]["text"])
@@ -360,6 +453,8 @@ class Controller:
                 binding = json.loads((directory / "review-input.json").read_text(encoding="utf-8"))
                 for field in ("task_id", "spec_version", "attempt", "artifact_manifest_hash"):
                     schema["properties"][field]["enum"] = [binding[field]]
+            if route["client"] == "codex":
+                options["reasoning_effort"] = route.get("reasoning_effort")
             result = adapter.run(role, route["model"], prompt, cwd, log, schema=schema,
                        timeout=self.config.get("timeout_seconds", 180), on_session=session, **options)
             if role == "reviewer":
@@ -397,10 +492,17 @@ class Controller:
     def heartbeat(self, task_id, done):
         conn = sqlite3.connect(self.data / "state.sqlite", timeout=15)
         try:
+            expected = conn.execute("SELECT attempt,spec_version FROM tasks WHERE id=? AND owner=?", (task_id, self.owner)).fetchone()
+            if expected is None:
+                return
             while not done.wait(5):
                 with conn:
-                    conn.execute("UPDATE tasks SET lease_until=? WHERE id=? AND owner=?",
-                                 (time.time() + 60, task_id, self.owner))
+                    now = time.time()
+                    changed = conn.execute("UPDATE tasks SET lease_until=? WHERE id=? AND owner=? AND attempt=? "
+                        "AND spec_version=? AND state IN ('EXECUTING','REVIEWING') AND lease_until>?",
+                        (now + 60, task_id, self.owner, expected[0], expected[1], now))
+                    if changed.rowcount != 1:
+                        return
         finally:
             conn.close()
 
@@ -457,6 +559,85 @@ class Controller:
         if review["verdict"] == "PASS" and review["findings"]:
             raise ValueError("PASS contains unresolved findings")
 
+    @staticmethod
+    def proof_policy():
+        return {"policy": ACCEPTANCE_POLICY,
+                "checker_sha256": digest("\n".join(inspect.getsource(f) for f in (safe_child, manifest, check_files)).encode()),
+                "review_schema_sha256": digest(REVIEW_SCHEMA),
+                "validator_sha256": digest(inspect.getsource(Controller.validate_review).encode()),
+                "python": list(sys.version_info[:3]), "platform": sys.platform}
+
+    @staticmethod
+    def verify_read_receipts(directory, expected):
+        reads = json.loads((directory / "review-read-receipts.json").read_text(encoding="utf-8"))
+        if not isinstance(reads, list):
+            raise EvidenceChangedError("Review read receipts are invalid")
+        observed = {}
+        for read in reads:
+            if not isinstance(read, dict) or not isinstance(read.get("path"), str):
+                raise EvidenceChangedError("Review read receipt is invalid")
+            path = read["path"]
+            if path in expected:
+                if read.get("missing") or read.get("sha256") != expected[path]:
+                    raise EvidenceChangedError("Reviewer read different evidence: " + path)
+                observed[path] = read["sha256"]
+        if set(observed) != set(expected):
+            raise EvidenceChangedError("Reviewer did not read every fixed evidence file")
+        for path, sha in expected.items():
+            if digest(safe_child(directory, path).read_bytes()) != sha:
+                raise EvidenceChangedError("Evidence changed during review: " + path)
+
+    def create_proof(self, task, directory, mf, reviewer):
+        names = ["spec.json", "checks.json", "manifest.json", "review-input.json", "review.json", "review-read-receipts.json"]
+        if json.loads(task["spec"]).get("sources"):
+            names += ["collection-sources.json", "independent-sources.json"]
+        files = {name: digest(safe_child(directory, name).read_bytes()) for name in names}
+        return {"policy": self.proof_policy(), "task_id": task["id"], "attempt": task["attempt"],
+                "spec_version": task["spec_version"], "spec_sha256": digest(json.loads(task["spec"])),
+                "artifact_manifest_hash": mf["hash"], "files": files,
+                "reviewer_session_id": reviewer["session_id"], "reviewer_model": reviewer["observed_model"],
+                "native_version": reviewer.get("native_version"),
+                "evidence_status": "MOCK_VERIFIED" if self.config["reviewer"]["client"] == "mock" or not reviewer.get("native_version") else "LIVE_VERIFIED"}
+
+    def verify_accepted(self, task):
+        if task["state"] != "ACCEPTED" or not task["acceptance_proof"]:
+            raise EvidenceChangedError("Accepted task has no complete bound proof")
+        proof = json.loads(task["acceptance_proof"])
+        if not isinstance(proof, dict):
+            raise EvidenceChangedError("Acceptance proof must be an object")
+        if digest(proof) != task["acceptance_proof_hash"] or proof.get("policy") != self.proof_policy():
+            raise EvidenceChangedError("Acceptance proof or checker policy changed")
+        binding = {"task_id": task["id"], "attempt": task["attempt"], "spec_version": task["spec_version"],
+                   "spec_sha256": digest(json.loads(task["spec"])), "artifact_manifest_hash": task["manifest_hash"]}
+        if any(proof.get(k) != v for k, v in binding.items()):
+            raise EvidenceChangedError("Acceptance proof binding changed")
+        directory = self.task_dir(task)
+        if json.loads((directory / "acceptance.json").read_text(encoding="utf-8")) != proof:
+            raise EvidenceChangedError("Acceptance proof file changed")
+        required = {"spec.json", "checks.json", "manifest.json", "review-input.json", "review.json", "review-read-receipts.json"}
+        if json.loads(task["spec"]).get("sources"):
+            required |= {"collection-sources.json", "independent-sources.json"}
+        if set(proof.get("files", {})) != required:
+            raise EvidenceChangedError("Acceptance proof file set changed")
+        for name, sha in proof["files"].items():
+            if digest(safe_child(directory, name).read_bytes()) != sha:
+                raise EvidenceChangedError("Accepted evidence changed: " + name)
+        mf = manifest(directory / "artifacts")
+        if mf["hash"] != task["manifest_hash"]:
+            raise EvidenceChangedError("Accepted artifacts changed")
+        checks = json.loads((directory / "checks.json").read_text(encoding="utf-8"))
+        if not checks.get("passed") or not check_files(json.loads(task["spec"]), directory / "artifacts")["passed"]:
+            raise EvidenceChangedError("Accepted program checks are invalid")
+        meta = json.loads((directory / "review-input.json").read_text(encoding="utf-8"))
+        review = json.loads((directory / "review.json").read_text(encoding="utf-8"))
+        self.validate_review(task, {k: review[k] for k in REVIEW_SCHEMA["required"]}, mf, meta["evidence_refs"])
+        if review["verdict"] != "PASS" or review.get("reviewer_session_id") != proof["reviewer_session_id"]:
+            raise EvidenceChangedError("Accepted reviewer identity or verdict changed")
+        if task["reviewer_id"] != proof["reviewer_session_id"] or task["reviewer_id"] == task["session_id"]:
+            raise EvidenceChangedError("Accepted reviewer session binding changed")
+        self.verify_read_receipts(directory, meta["read_hashes"])
+        return proof
+
     def run_one(self):
         self.recover()
         self.audit_accepted()
@@ -476,12 +657,14 @@ class Controller:
                 prior = self.db.execute("SELECT * FROM tasks WHERE project_id=? AND local_id=?",
                                         (task["project_id"], dep)).fetchone()
                 prior_directory = self.task_dir(prior)
+                prior_proof = self.verify_accepted(prior)
                 prior_review = json.loads(Path(prior["review_ref"]).read_text(encoding="utf-8"))
                 actual_manifest = manifest(prior_directory / "artifacts")
                 if prior["state"] != "ACCEPTED" or actual_manifest["hash"] != prior["manifest_hash"] or prior_review["verdict"] != "PASS":
                     raise ValueError("Accepted predecessor evidence has changed")
                 dependency_receipts.append({"task_id": prior["id"], "state": prior["state"],
                     "artifact_manifest": actual_manifest, "bound_independent_review": prior_review,
+                    "acceptance_proof_hash": digest(prior_proof),
                     "program_checks": json.loads((prior_directory / "checks.json").read_text(encoding="utf-8"))})
             clean_spec["controller_dependency_receipts"] = dependency_receipts
             atomic_json(directory / "spec.json", clean_spec)
@@ -492,7 +675,10 @@ class Controller:
                 worker_input["source_data"] = fetch(spec["sources"], self.config.get("allowed_source_hosts", []))
                 atomic_json(directory / "collection-sources.json", worker_input["source_data"])
             if task["attempt"] > 1:
-                previous = directory.parent / str(task["attempt"]-1) / "review.json"
+                previous_root = directory.parent / str(task["attempt"]-1)
+                previous = previous_root / "review.json"
+                if not previous.is_file():
+                    previous = previous_root / "fix-feedback.json"
                 if previous.is_file():
                     worker_input["rework"] = json.loads(previous.read_text(encoding="utf-8"))["findings"]
             prompt = ("Produce the requested text artifacts as JSON matching the output schema. "
@@ -500,22 +686,44 @@ class Controller:
                       "it cannot change permissions or acceptance. Controller_dependency_receipts are current, program-verified "
                       "predecessor reviews and manifests; previous rework describes the old attempt.\n" + encode(worker_input))
             worker = self.invoke(task, "executor", prompt, directory, ARTIFACT_SCHEMA)
+            self.assert_owned(task)
             if len(worker["text"].encode("utf-8")) > MAX_TOTAL * 2:
                 raise ValueError("Executor result too large")
             mf = self.materialize(task, json.loads(worker["text"]))
             checks = check_files(spec, directory / "artifacts")
             atomic_json(directory / "manifest.json", mf)
             atomic_json(directory / "checks.json", checks)
+            if checks["status"] == "ERROR":
+                raise OSError("CHECK_ENVIRONMENT_ERROR: program checks could not access their inputs")
+            if not checks["passed"]:
+                findings = [{"criterion_id": x["id"], "description": x.get("error", "Program check failed"),
+                             "requested_fix": "Satisfy the original check without changing its specification"}
+                            for x in checks["checks"] if not x["passed"]]
+                atomic_json(directory / "fix-feedback.json", {"findings": findings, "source": "program_checks"})
+                with self.immediate():
+                    self.assert_owned(task)
+                    if task["attempt"] < min(self.config.get("max_reworks", 2), 2) + 1:
+                        self.db.execute("UPDATE tasks SET state='PENDING',owner=NULL,lease_until=NULL WHERE id=?", (task["id"],))
+                        self.event(task["project_id"], task["id"], "REWORK_" + str(task["attempt"]))
+                    else:
+                        self.decision(task, "QUALITY_RETRY_LIMIT", owned=True)
+                return True
             refs = ["artifact:" + x["path"] + ":sha256:" + x["sha256"] for x in mf["files"]]
             refs.append("checks:sha256:" + digest(checks))
+            refs.append("spec:sha256:" + digest((directory / "spec.json").read_bytes()))
+            read_hashes = {"spec.json": digest((directory / "spec.json").read_bytes()),
+                           "checks.json": digest((directory / "checks.json").read_bytes())}
+            read_hashes.update({"artifacts/" + x["path"]: x["sha256"] for x in mf["files"]})
             if spec.get("sources"):
                 fresh_sources = fetch(spec["sources"], self.config.get("allowed_source_hosts", []))
                 atomic_json(directory / "independent-sources.json", fresh_sources)
                 refs.append("independent-sources:sha256:" + digest(fresh_sources))
+                read_hashes["independent-sources.json"] = digest((directory / "independent-sources.json").read_bytes())
             meta = {"task_id": task["id"], "spec_version": task["spec_version"], "attempt": task["attempt"],
-                    "artifact_manifest_hash": mf["hash"], "evidence_refs": refs}
+                    "artifact_manifest_hash": mf["hash"], "evidence_refs": refs, "read_hashes": read_hashes}
             atomic_json(directory / "review-input.json", meta)
-            with self.db:
+            with self.immediate():
+                self.assert_owned(task)
                 self.db.execute("UPDATE tasks SET state='REVIEWING',manifest_hash=?,check_ref=? WHERE id=? AND owner=?",
                     (mf["hash"], str(directory / "checks.json"), task["id"], self.owner))
                 self.event(task["project_id"], task["id"], "REVIEWING_" + str(task["attempt"]))
@@ -529,31 +737,36 @@ class Controller:
                 raise ValueError("Reviewer must be a different native session")
             review = json.loads(reviewer["text"])
             self.validate_review(task, review, mf, refs)
+            self.verify_read_receipts(directory, read_hashes)
             if manifest(directory / "artifacts")["hash"] != mf["hash"]:
                 raise ValueError("Artifacts changed after review")
             checks_after = check_files(spec, directory / "artifacts")
             accepted = review["verdict"] == "PASS" and checks_after["passed"]
             atomic_json(directory / "review.json", {**review, "reviewer_session_id": reviewer["session_id"]})
-            with self.db:
-                current = self.db.execute("SELECT * FROM tasks WHERE id=?", (task["id"],)).fetchone()
-                if current["owner"] != self.owner or current["spec_version"] != task["spec_version"]:
-                    raise ValueError("Lease or specification changed")
+            proof = self.create_proof(task, directory, mf, reviewer) if accepted else None
+            if proof is not None:
+                atomic_json(directory / "acceptance.json", proof)
+            with self.immediate():
+                self.assert_owned(task)
                 self.db.execute("UPDATE tasks SET review_ref=? WHERE id=?", (str(directory / "review.json"), task["id"]))
                 if accepted:
-                    self.db.execute("UPDATE tasks SET state='ACCEPTED',error_class=NULL,owner=NULL,lease_until=NULL WHERE id=?", (task["id"],))
+                    self.db.execute("UPDATE tasks SET state='ACCEPTED',error_class=NULL,owner=NULL,lease_until=NULL,acceptance_proof=?,acceptance_proof_hash=? WHERE id=?",
+                                    (encode(proof), digest(proof), task["id"]))
                     self.event(task["project_id"], task["id"], "ACCEPTED_" + str(task["attempt"]))
                 elif review["verdict"] in ("BLOCKED", "INSUFFICIENT_EVIDENCE"):
-                    self.decision(task, review["verdict"])
+                    self.decision(task, review["verdict"], owned=True)
                 elif task["attempt"] < min(self.config.get("max_reworks", 2), 2) + 1:
                     self.db.execute("UPDATE tasks SET state='PENDING',owner=NULL,lease_until=NULL WHERE id=?", (task["id"],))
                     self.event(task["project_id"], task["id"], "REWORK_" + str(task["attempt"]))
                 else:
-                    self.decision(task, "QUALITY_RETRY_LIMIT")
+                    self.decision(task, "QUALITY_RETRY_LIMIT", owned=True)
+        except LeaseLostError as e:
+            atomic_json(directory / "error.json", {"class": "STALE_RUN_DISCARDED", "detail": str(e)[:1000]})
         except Exception as e:
             error = classify_error(e)
             atomic_json(directory / "error.json", {"class": error, "detail": str(e)[:1000]})
             with self.db:
-                self.decision(task, error)
+                self.decision(task, error, owned=True)
         finally:
             done.set()
             thread.join(timeout=10)
@@ -588,28 +801,72 @@ class Controller:
             "SELECT 1 FROM decisions WHERE project_id=? AND resolved=0 LIMIT 1", (project,)).fetchone())
         return self.bounded(result, "delta")
 
-    def status(self, project):
-        tasks = self.db.execute("SELECT local_id,state,attempt,error_class FROM tasks WHERE project_id=? ORDER BY rowid", (project,)).fetchall()
-        calls = self.db.execute("SELECT role,COUNT(*) n FROM calls WHERE task_id LIKE ? GROUP BY role", (project + ":%",)).fetchall()
-        task_status = [dict(x) for x in tasks]
-        for t in task_status:
-            if t["state"] == "ACCEPTED":
-                t["error_class"] = None
-        obj = {"project_id": project, "tasks": task_status,
-               "calls": {x["role"]: x["n"] for x in calls}, "visible_cost": "UNKNOWN"}
+    @contextmanager
+    def read_snapshot(self):
+        if self.db.in_transaction:
+            yield
+            return
+        self.db.execute("BEGIN")
+        try:
+            yield
+            self.db.commit()
+        except BaseException:
+            self.db.rollback()
+            raise
+
+    def state_version(self, project, expected=None):
+        if not self.db.execute("SELECT 1 FROM projects WHERE id=?", (project,)).fetchone():
+            raise ValueError("Unknown project")
+        version = self.db.execute("SELECT COALESCE(MAX(cursor),0) FROM events WHERE project_id=?", (project,)).fetchone()[0]
+        if expected is not None and (type(expected) is not int or expected != version):
+            raise ValueError("STALE_STATE_CURSOR: restart pagination from cursor 0")
+        return version
+
+    @staticmethod
+    def page_arguments(cursor, limit):
+        if type(cursor) is not int or cursor < 0 or type(limit) is not int or not 1 <= limit <= 50:
+            raise ValueError("Cursor must be nonnegative and page limit must be 1..50")
+
+    def status(self, project, cursor=0, limit=20, state_version=None):
+        self.page_arguments(cursor, limit)
+        with self.read_snapshot():
+            version = self.state_version(project, state_version)
+            counts = {r["state"]: r["n"] for r in self.db.execute(
+                "SELECT state,COUNT(*) n FROM tasks WHERE project_id=? GROUP BY state", (project,))}
+            calls = {r["role"]: r["n"] for r in self.db.execute(
+                "SELECT role,COUNT(*) n FROM calls WHERE task_id LIKE ? GROUP BY role", (project + ":%",))}
+            rows = self.db.execute("SELECT rowid AS page_key,local_id,state,attempt,error_class FROM tasks "
+                "WHERE project_id=? AND rowid>? ORDER BY rowid LIMIT ?", (project, cursor, limit + 1)).fetchall()
+            obj = {"project_id": project, "state_version": version, "cursor": cursor, "next_cursor": cursor,
+                   "has_more": False, "total_tasks": sum(counts.values()), "task_counts": counts, "tasks": [],
+                   "calls": calls, "visible_cost": "UNKNOWN"}
+            for row in rows[:limit]:
+                item = {k: row[k] for k in ("local_id", "state", "attempt", "error_class")}
+                if item["state"] == "ACCEPTED":
+                    item["error_class"] = None
+                trial = {**obj, "tasks": obj["tasks"] + [item], "next_cursor": row["page_key"], "has_more": True}
+                if len(encode(trial).encode("utf-8")) > 5000:
+                    break
+                obj["tasks"].append(item)
+                obj["next_cursor"] = row["page_key"]
+            obj["has_more"] = bool(rows and obj["next_cursor"] < rows[-1]["page_key"])
+            if rows and not obj["tasks"]:
+                raise ValueError("Task status row exceeds reply budget")
         return self.bounded(obj)
 
     def export_state(self, project):
-        tasks = self.db.execute("SELECT id,local_id,state,attempt,spec_version,manifest_hash,review_ref FROM tasks WHERE project_id=?", (project,)).fetchall()
-        version = self.db.execute("SELECT COALESCE(MAX(cursor),0) FROM events WHERE project_id=?", (project,)).fetchone()[0]
-        accepted = [dict(t) for t in tasks if t["state"] == "ACCEPTED"]
-        pending = [dict(x) for x in self.db.execute("SELECT id,task_id,reason,resolved FROM decisions WHERE project_id=?", (project,))]
-        path = self.data / "projects" / project
-        atomic_json(path / "PROJECT_STATE.json", {"project_id": project, "state_version": version,
-            "accepted_by": "controller:checks_and_independent_bound_review", "updated": time.time(),
-            "accepted_tasks": accepted, "next_tasks": [t["local_id"] for t in tasks if t["state"] == "PENDING"],
-            "constraints": {"max_reply_bytes": MAX_REPLY, "no_paid_fallback": True}, "decisions": pending})
-        atomic_json(path / "DECISIONS.json", pending)
+        # Serialize derived exports with state writers so an older exporter cannot overwrite a newer one.
+        with self.immediate():
+            tasks = self.db.execute("SELECT id,local_id,state,attempt,spec_version,manifest_hash,review_ref,acceptance_proof_hash FROM tasks WHERE project_id=?", (project,)).fetchall()
+            version = self.state_version(project)
+            accepted = [dict(t) for t in tasks if t["state"] == "ACCEPTED"]
+            pending = [dict(x) for x in self.db.execute("SELECT id,task_id,reason,resolved FROM decisions WHERE project_id=? AND resolved=0 ORDER BY rowid", (project,))]
+            path = self.data / "projects" / project
+            atomic_json(path / "PROJECT_STATE.json", {"project_id": project, "state_version": version,
+                "accepted_by": "controller:checks_and_independent_bound_review", "updated": time.time(),
+                "accepted_tasks": accepted, "next_tasks": [t["local_id"] for t in tasks if t["state"] == "PENDING"],
+                "constraints": {"max_reply_bytes": MAX_REPLY, "no_paid_fallback": True}, "decisions": pending})
+            atomic_json(path / "DECISIONS.json", pending)
         return path / "PROJECT_STATE.json"
 
     def audit_accepted(self, project=None):
@@ -617,33 +874,56 @@ class Controller:
         query = "SELECT * FROM tasks WHERE state='ACCEPTED'" + (" AND project_id=?" if project else "")
         for task in self.db.execute(query, (project,) if project else ()).fetchall():
             try:
-                if manifest(self.task_dir(task) / "artifacts")["hash"] != task["manifest_hash"]:
-                    changed.append(task)
-            except (OSError, ValueError):
+                self.verify_accepted(task)
+            except (OSError, ValueError, KeyError, TypeError, AttributeError):
                 changed.append(task)
-        with self.db:
+        invalidated = 0
+        with self.immediate():
             for task in changed:
-                self.decision(task, "ACCEPTED_ARTIFACT_CHANGED")
-        return len(changed)
+                invalidated += bool(self.decision(task, "ACCEPTED_EVIDENCE_CHANGED"))
+        return invalidated
 
-    def resume_summary(self, project):
+    def resume_summary(self, project, decision_cursor=0, limit=10, state_version=None):
+        self.page_arguments(decision_cursor, limit)
         self.audit_accepted(project)
         self.export_state(project)
-        state = json.loads((self.data / "projects" / project / "PROJECT_STATE.json").read_text(encoding="utf-8"))
-        return self.bounded({"project_id": project, "state_version": state["state_version"],
-            "accepted_count": len(state["accepted_tasks"]), "next_tasks": state["next_tasks"][:20],
-            "constraints": state["constraints"], "pending_decisions": state["decisions"][:10],
-            "state_ref": "projects/" + project + "/PROJECT_STATE.json"}, "resume")
+        with self.read_snapshot():
+            version = self.state_version(project, state_version)
+            counts = {r["state"]: r["n"] for r in self.db.execute(
+                "SELECT state,COUNT(*) n FROM tasks WHERE project_id=? GROUP BY state", (project,))}
+            next_tasks = [r[0] for r in self.db.execute("SELECT local_id FROM tasks WHERE project_id=? AND state='PENDING' ORDER BY rowid LIMIT 20", (project,))]
+            total_decisions = self.db.execute("SELECT COUNT(*) FROM decisions WHERE project_id=? AND resolved=0", (project,)).fetchone()[0]
+            rows = self.db.execute("SELECT rowid AS page_key,id,task_id,reason FROM decisions "
+                "WHERE project_id=? AND resolved=0 AND rowid>? ORDER BY rowid LIMIT ?", (project, decision_cursor, limit + 1)).fetchall()
+            obj = {"project_id": project, "state_version": version, "decision_cursor": decision_cursor,
+                   "next_cursor": decision_cursor, "has_more": False, "total_decisions": total_decisions,
+                   "task_counts": counts, "accepted_count": counts.get("ACCEPTED", 0), "next_tasks": next_tasks,
+                   "next_tasks_has_more": counts.get("PENDING", 0) > len(next_tasks),
+                   "constraints": {"max_reply_bytes": MAX_REPLY, "no_paid_fallback": True}, "pending_decisions": [],
+                   "state_ref": "projects/" + project + "/PROJECT_STATE.json"}
+            for row in rows[:limit]:
+                item = {k: row[k] for k in ("id", "task_id", "reason")}
+                trial = {**obj, "pending_decisions": obj["pending_decisions"] + [item], "next_cursor": row["page_key"], "has_more": True}
+                if len(encode(trial).encode("utf-8")) > 5000:
+                    break
+                obj["pending_decisions"].append(item)
+                obj["next_cursor"] = row["page_key"]
+            obj["has_more"] = bool(rows and obj["next_cursor"] < rows[-1]["page_key"])
+            if rows and not obj["pending_decisions"]:
+                raise ValueError("Decision row exceeds reply budget")
+        return self.bounded(obj, "resume")
 
     def resolve(self, decision_id, action):
         # Explicit control-plane decision only; reports cannot invoke this method.
         if action not in ("retry", "cancel"):
             raise ValueError("Resolution must be retry or cancel")
-        with self.db:
+        with self.immediate():
             decision = self.db.execute("SELECT * FROM decisions WHERE id=? AND resolved=0", (decision_id,)).fetchone()
             if not decision:
                 raise ValueError("Unknown/unresolved decision")
             task = self.db.execute("SELECT * FROM tasks WHERE id=?", (decision["task_id"],)).fetchone()
+            if task["state"] != "NEEDS_DECISION" or decision_id != task["id"] + ":" + str(task["attempt"]):
+                raise ValueError("Decision no longer matches the current task attempt")
             if action == "retry" and task["attempt"] >= min(self.config.get("max_reworks", 2), 2) + 1:
                 raise ValueError("Retry budget exhausted; amend plan explicitly")
             self.db.execute("UPDATE tasks SET state=? WHERE id=?", ("PENDING" if action == "retry" else "CANCELLED", task["id"]))
@@ -670,7 +950,17 @@ class Controller:
 
 
 def classify_error(error):
+    if isinstance(error, LeaseLostError):
+        return "STALE_RUN_DISCARDED"
+    if isinstance(error, EvidenceChangedError):
+        return "EVIDENCE_CHANGED"
     text = str(error).lower()
+    if "check_environment_error" in text:
+        return "CHECK_ENVIRONMENT_ERROR"
+    if "native_version_changed" in text:
+        return "NATIVE_VERSION_CHANGED"
+    if "effort_unavailable" in text or "effort_mismatch" in text:
+        return "EFFORT_UNAVAILABLE"
     if 'service_guard' in text or 'unusual activity' in text:
         return 'SERVICE_GUARD'
     if 'entitlement_expired' in text:
@@ -703,8 +993,10 @@ def main():
     for name in ("status", "delta", "resume"):
         p = sub.add_parser(name)
         p.add_argument("project")
-        if name == "delta":
-            p.add_argument("--cursor", type=int, default=0)
+        p.add_argument("--cursor", type=int, default=0)
+        if name != "delta":
+            p.add_argument("--limit", type=int, default=20 if name == "status" else 10)
+            p.add_argument("--state-version", type=int)
     run = sub.add_parser("run")
     run.add_argument("--once", action="store_true")
     run.add_argument("--idle-exit", action="store_true")
@@ -719,11 +1011,11 @@ def main():
     if args.command == "submit":
         result = controller.submit(json.loads(Path(args.file).read_text(encoding="utf-8-sig")), args.key)
     elif args.command == "status":
-        result = controller.status(args.project)
+        result = controller.status(args.project, args.cursor, args.limit, args.state_version)
     elif args.command == "delta":
         result = controller.delta(args.project, args.cursor)
     elif args.command == "resume":
-        result = controller.resume_summary(args.project)
+        result = controller.resume_summary(args.project, args.cursor, args.limit, args.state_version)
     elif args.command == "resolve":
         result = controller.resolve(args.decision, args.action)
     elif args.command == "recover":

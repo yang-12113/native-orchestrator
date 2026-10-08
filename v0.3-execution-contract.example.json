@@ -1,5 +1,5 @@
 {
-  "schema_version": "native-orchestrator.execution-contract/0.3-draft",
+  "schema_version": "native-orchestrator.execution-contract/0.3-draft.2",
   "status": "DESIGN_ONLY",
   "dispatchable": false,
   "runtime_implemented": false,
@@ -15,7 +15,14 @@
     "execution_mode": "managed_repo_v03",
     "authority": "controller SQLite",
     "base_input_manifest_sha256": null,
-    "baseline_status": "MUST_FREEZE_BEFORE_DISPATCH"
+    "baseline_status": "MUST_FREEZE_BEFORE_DISPATCH",
+    "git_baseline": {
+      "policy": "FIRST_IMPLEMENTATION_REQUIRES_CLEAN_COMMITTED_GIT_INPUT",
+      "base_commit": null,
+      "candidate_commit": null,
+      "dirty_or_non_git_input": "FAIL_PREFLIGHT_UNTIL_EXPLICIT_FREEZE",
+      "automatic_stash_or_discard_allowed": false
+    }
   },
   "task": {
     "task_id": "fix-large-project-interfaces",
@@ -114,13 +121,46 @@
       "input_manifest_sha256_required": true,
       "artifact_manifest_sha256_required": true,
       "reviewer_session_id_required": true,
-      "program_check_receipts_required": true
+      "program_check_receipts_required": true,
+      "actual_review_read_sha256_required": true,
+      "checker_and_check_catalog_sha256_required": true,
+      "policy_sha256_required": true,
+      "native_version_model_effort_required": true,
+      "environment_and_dependency_fingerprint_required": true,
+      "complete_proof_revalidation_before_dependency_or_publish": true
     },
     "permissions": {
       "worker_scope_enforced": false,
       "review_snapshot_readonly_verified": false,
       "memory_settings_verified": false,
       "unknown_dispatch_policy": "RECONCILE_BEFORE_RETRY"
+    },
+    "authority_fencing": {
+      "all_state_writers": ["claim", "heartbeat", "success", "failure", "review", "recover", "publish"],
+      "required_under_sqlite_writer_lock": ["owner", "attempt", "spec_version", "input_sha256", "lease_expiry"],
+      "budget_reservation": "ATOMIC_WITH_DISPATCH_INTENT",
+      "stale_attempt_policy": "KEEP_ATTEMPT_LOG_ONLY"
+    },
+    "check_outcomes": {
+      "PASS": "CONTINUE_TO_INDEPENDENT_REVIEW",
+      "FAIL": "BOUNDED_QUALITY_REWORK_WITHOUT_REVIEW_CALL",
+      "ERROR": "CONCRETE_DECISION_REQUEST_WITHOUT_QUALITY_RETRY"
+    },
+    "promotion": {
+      "runtime_implemented": false,
+      "durable_intent_required": true,
+      "intent_fields": ["base_commit", "candidate_commit", "proof_sha256", "generation", "lease_token"],
+      "acceptance_linearization_point": "FENCED_SQLITE_PUBLISH_COMMIT",
+      "current_is_rebuildable_projection": true,
+      "recovery": "RECONCILE_GIT_PROOF_INTENT_AND_SQLITE_BEFORE_CURRENT",
+      "git_sqlite_file_cross_medium_atomicity_claimed": false
+    },
+    "notifications": {
+      "pending_decision_may_wake_master_before_other_tasks_finish": true,
+      "dedupe_by": "UNRESOLVED_DECISION_SET_OR_FINAL_TERMINAL_STATE",
+      "dispatch_reserves_master_and_project_budget": true,
+      "delivery_acknowledgement_required": true,
+      "delivery_ack_runtime_implemented": false
     }
   }
 }

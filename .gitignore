@@ -1,4 +1,14 @@
-.runtime/
-data/
-__pycache__/
+/.runtime/
+/data*/
+/evidence/
+/runtime-help-only/
+/__pycache__/
 *.sqlite*
+/config.live.json
+/config.codex.json
+/config.workbuddy.json
+/*.zip
+/.venv*/
+/.pytest_cache/
+.env
+.env.*

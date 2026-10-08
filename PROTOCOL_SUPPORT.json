@@ -1,0 +1,56 @@
+{
+  "native_version": "0.162.0-alpha.2",
+  "method": "locally generated experimental JSON Schema; no model call",
+  "files": {
+    "v1/InitializeResponse.json": {
+      "sha256": "62ad689c2cb6379913c1d72749cfd8de5089d35760214123518eb92eef11acc9",
+      "verified_fields": [
+        "userAgent"
+      ]
+    },
+    "v2/ModelListResponse.json": {
+      "sha256": "2fb387a2ed258fc74258828ea342d68f89ce4e8e22cd0329ca59d2b423f9108b",
+      "verified_fields": [
+        "data",
+        "nextCursor"
+      ]
+    },
+    "v2/ThreadStartParams.json": {
+      "sha256": "80a40a7fac15b4bf70efb7f893fb353acc0a0d30c68f54aee4f01923deca85de",
+      "verified_fields": [
+        "model",
+        "config",
+        "dynamicTools",
+        "approvalPolicy",
+        "sandbox",
+        "ephemeral"
+      ]
+    },
+    "v2/ThreadStartResponse.json": {
+      "sha256": "bcb709ddaed237632beda448e79621d3fbfcc449fee661221088fa16d8b55914",
+      "verified_fields": [
+        "model",
+        "reasoningEffort",
+        "thread"
+      ]
+    },
+    "v2/TurnStartParams.json": {
+      "sha256": "f4a07f33f33d5962bf5a770d1c1bb6a6de1412ccef9fb62705c4d9a83a956dbf",
+      "verified_fields": [
+        "model",
+        "effort",
+        "outputSchema",
+        "threadId",
+        "sandboxPolicy"
+      ]
+    },
+    "DynamicToolCallResponse.json": {
+      "sha256": "abb082cad67f11fcc98ba75f2eff75d7d1723af0c657655329b83ff160451a02",
+      "verified_fields": [
+        "contentItems",
+        "success"
+      ]
+    }
+  },
+  "supported_reasoning_efforts_validated": true
+}

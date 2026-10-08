@@ -14,10 +14,12 @@ def snapshot(data,project,await_master=False):
     c=sqlite3.connect(db.as_uri()+'?mode=ro',uri=True,timeout=10);c.row_factory=sqlite3.Row
     try:
         if not c.execute('SELECT 1 FROM projects WHERE id=?',(project,)).fetchone():raise ValueError('Unknown project ID')
+        c.execute('BEGIN')
         tasks=c.execute('SELECT local_id,state,attempt,error_class,manifest_hash FROM tasks WHERE project_id=? ORDER BY rowid',(project,)).fetchall()
         counts={}
         for task in tasks:counts[task['state']]=counts.get(task['state'],0)+1
-        decisions=[dict(x) for x in c.execute('SELECT id,reason FROM decisions WHERE project_id=? AND resolved=0 LIMIT 10',(project,))]
+        decisions=[dict(x) for x in c.execute('SELECT rowid AS cursor,id,reason FROM decisions WHERE project_id=? AND resolved=0 ORDER BY rowid LIMIT 10',(project,))]
+        decision_count=c.execute('SELECT COUNT(*) FROM decisions WHERE project_id=? AND resolved=0',(project,)).fetchone()[0]
         version=c.execute('SELECT COALESCE(MAX(cursor),0) FROM events WHERE project_id=?',(project,)).fetchone()[0]
         has_master=c.execute("SELECT 1 FROM sqlite_master WHERE type='table' AND name='master_notices'").fetchone()
         notice=c.execute('SELECT state,result_ref FROM master_notices WHERE project_id=? AND state_version=?',(project,version)).fetchone() if has_master else None
@@ -31,7 +33,10 @@ def snapshot(data,project,await_master=False):
         elif accepted:outcome='WAITING_FOR_MASTER'
         else:outcome='RUNNING'
         report={'project_id':project,'state_version':version,'outcome':outcome,'task_counts':counts,
-            'decision_requests':decisions,'master_state':master,'model_calls_made_by_watcher':0}
+            'decision_requests':decisions,'decision_count':decision_count,'decisions_has_more':decision_count>len(decisions),
+            'decision_next_cursor':decisions[-1]['cursor'] if decisions else 0,
+            'decision_query':'orchestrator.py resume '+project+' --cursor <decision_next_cursor> --state-version '+str(version),
+            'master_state':master,'model_calls_made_by_watcher':0}
         if stopped:
             roots=[]
             for task in tasks:
