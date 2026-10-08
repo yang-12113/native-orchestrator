@@ -11,9 +11,9 @@
   "baseline_code_commit": "b97788f0c7f3318874765c0fcd664d4bc05e80ed",
   "baseline_tag": "controller-v0.2.1-verified",
   "baseline_regression_tests": 59,
-  "current_phase": "FRAME_003_READY",
+  "current_phase": "FRAME_003_IMPLEMENTATION",
   "current_task": "FRAME-003",
-  "next_action": "读FRAME-003票据，主代理冻结工作区/提案接口，给新Luna辅助模块与独立测试分配唯一文件；FRAME-004真实执行边界未验证，不启用工程队列。",
+  "next_action": "Luna按冻结API分别实现repo_workspace.py与独立测试；主代理整合并跑实际Git/worktree验证，冻结候选后独审。",
   "code_worktree": "E:\\零碎\\native-orchestrator-v03",
   "code_branch": "codex/engineering-v03",
   "resume_files": [
@@ -77,7 +77,7 @@
     {
       "id": "FRAME-003",
       "owner": "root interface / Luna workspace helper",
-      "status": "READY",
+      "status": "IN_PROGRESS",
       "dependencies": [
         "FRAME-002"
       ],
@@ -165,7 +165,10 @@
     "G4": "NOT_STARTED"
   },
   "pending_decisions": [],
-  "active_delegations": [],
+  "active_delegations": [
+    "luna_workspace_impl",
+    "luna_workspace_tests"
+  ],
   "context_policy": {
     "new_domain_fork_turns": "none",
     "max_concurrent_luna_workitems": 2,
