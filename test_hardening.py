@@ -211,6 +211,11 @@ def _single_task(task_id="solo", artifact="out.txt", expected="ok", **extra):
     return {"title": "synthetic hardening test", "tasks": [task]}
 
 
+def changed_read_review_file_for_policy_test(directory, params):
+    """Test-only substitute used to model a changed evidence-reader implementation."""
+    raise ValueError("test-only evidence reader policy")
+
+
 class HardeningTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
@@ -487,6 +492,22 @@ class HardeningTests(unittest.TestCase):
                 self.assertGreaterEqual(c.audit_accepted(project), 1)
                 final = c.db.execute("SELECT state FROM tasks WHERE id=?", (task["id"],)).fetchone()
                 self.assertNotEqual(final["state"], "ACCEPTED")
+
+    def test_accepted_proof_is_rejected_when_evidence_helper_source_changes(self):
+        c, project, task = self._make_accepted("helper-policy-version")
+        proof = json.loads(task["acceptance_proof"])
+        self.assertIn("evidence_rules_sha256", proof["policy"])
+        self.assertIn("policy_source_sha256", proof["policy"])
+        self.assertEqual(c.verify_accepted(task), proof)
+        original_policy = c.proof_policy()
+        with patch.object(orchestrator.Controller, "read_review_file",
+                          staticmethod(changed_read_review_file_for_policy_test)):
+            changed_policy = c.proof_policy()
+            self.assertNotEqual(changed_policy, original_policy)
+            with self.assertRaisesRegex(ValueError, "proof or checker policy changed"):
+                c.verify_accepted(task)
+        self.assertEqual(c.db.execute("SELECT state FROM tasks WHERE id=?", (task["id"],)).fetchone()[0], "ACCEPTED")
+        self.assertEqual(c.verify_accepted(task), proof)
 
     def test_downstream_task_rejects_forged_predecessor_proof(self):
         c = self.controller("forged-dependency", FAKE_CODEX_CONFIG)

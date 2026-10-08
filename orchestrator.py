@@ -602,6 +602,9 @@ class Controller:
                 "validator_sha256": digest(inspect.getsource(Controller.validate_review).encode()),
                 "acceptance_validator_sha256": digest(inspect.getsource(Controller.verify_accepted).encode()),
                 "dependency_receipt_sha256": digest(inspect.getsource(Controller.dependency_receipt).encode()),
+                "evidence_rules_sha256": digest("\n".join(inspect.getsource(f) for f in (
+                    Controller.read_review_file, Controller.verify_read_receipts, Controller.create_proof)).encode()),
+                "policy_source_sha256": digest(inspect.getsource(Controller.proof_policy).encode()),
                 "python": list(sys.version_info[:3]), "platform": sys.platform}
 
     @staticmethod
