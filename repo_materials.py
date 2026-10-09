@@ -28,13 +28,16 @@ _SENSITIVE_SEGMENTS = {
     ".ssh", "credentials", "credential", "secrets", "secret", "tokens",
     "token", "certificates", "certificate", "private-keys",
 }
-_SENSITIVE_FILENAMES = {
-    "id_rsa", "id_dsa", "id_ecdsa", "id_ed25519", "credentials",
-    "credentials.json", "secrets", "secrets.json", "auth", "auth.json",
-    "token", "token.json", "access_token", "refresh_token",
+_SENSITIVE_STEMS = {
+    "id_rsa", "id_dsa", "id_ecdsa", "id_ed25519", "credential",
+    "credentials", "secret", "secrets", "auth", "authentication",
+    "token", "tokens", "access_token", "refresh_token", "api_key",
+    "apikey", "client_secret", "private_key", "password", "passwd",
+    "passphrase", "service_account", "database_url", "connection_string",
 }
 _SENSITIVE_SUFFIXES = {".pem", ".p12", ".pfx", ".key", ".keystore", ".jks"}
-_ROOT_CONTROL_FILES = {
+_CONTROL_DIRECTORIES = {"tasks"}
+_CONTROL_BASENAMES = {
     "agents.md", "project.md", "projects.md", "decisions.md",
     "engineering_plan.md", "mainline.md", "development_state.json",
     "architecture_decision.md", "blockers.md", "acceptance.json",
@@ -97,6 +100,7 @@ def _is_link(path: Path) -> bool:
 
 
 def _is_protected(relative: str) -> bool:
+    """Hard-deny conservative controller and secret paths, even if allowlisted."""
     folded = relative.casefold()
     parts = folded.split("/")
     protected = {name.casefold() for name in PROTECTED}
@@ -108,12 +112,15 @@ def _is_protected(relative: str) -> bool:
                 parts[index:index + len(segments)] == segments
                 for index in range(len(parts) - len(segments) + 1)):
             return True
-    if any(part in _SENSITIVE_SEGMENTS for part in parts):
+    if any(part in _CONTROL_DIRECTORIES or part in _SENSITIVE_SEGMENTS for part in parts):
         return True
     filename = parts[-1]
-    if len(parts) == 1 and filename in _ROOT_CONTROL_FILES:
+    if filename in _CONTROL_BASENAMES:
         return True
-    if filename.startswith(".env") or filename in _SENSITIVE_FILENAMES:
+    if filename.startswith(".env"):
+        return True
+    stem = filename.rsplit(".", 1)[0] if "." in filename else filename
+    if stem.lstrip(".") in _SENSITIVE_STEMS:
         return True
     if any(filename.endswith(suffix) for suffix in _SENSITIVE_SUFFIXES):
         return True

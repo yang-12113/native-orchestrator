@@ -1,5 +1,5 @@
 # FRAME-005 材料测试报告
 
-fake-only `unittest` 已启动（14 项；无 Git/native/model/network 进程）。此主机在 fixture `.runtime` 上执行 `Path.resolve(strict=True)` 得到 WinError 5，导致候选根校验前多项用例中断；日志保存在 `.runtime/frame-005-material-tests/logs/`。OS symlink 因 WinError 1314 跳过；未降低 guard，需由主机环境复跑。
+主机 M1 复测 15 项，仅普通源码对照因 Windows `write_text` 将 LF 转 CRLF 而失败；Reader 保留原始文本字节的行为正确。测试 fixture 已改用 `write_bytes(source.encode("utf-8"))` 固定 LF，待主机复测。此前发现的 read 漂移、EOF 零字节回执、控制文件保护问题已修复。
 
-代码核查待复跑确认：`read()` 未复核当前 manifest/Git，输入漂移后仍可能送出缓存；offset 到 EOF 会追加 `returned_bytes=0` 回执；`AGENTS.md` 未列入保护集。独立测试已覆盖这三项；实现未改。
+本轮保护用例通过；新增覆盖 `TASKS/FRAME-005.md`、嵌套 `module/AGENTS.md`、`credentials.yml`、`secrets.txt` 与 `module/client_secret.json` 拒绝，以及普通 `module/credentials_parser.py` 可读。本次只改测试与报告，旧日志保留在 `.runtime/frame-005-material-tests/logs/`。

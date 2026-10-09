@@ -176,13 +176,30 @@ class RepoMaterialsTests(unittest.TestCase):
                 ), "INVALID_BINDING")
 
     def test_protected_control_credential_and_configuration_paths_are_rejected(self) -> None:
-        protected = ("AGENTS.md", ".env", "auth.json", "config.live.json", ".git/config")
+        protected = (
+            "AGENTS.md", "module/AGENTS.md", "TASKS/FRAME-005.md",
+            "credentials.yml", "secrets.txt", "module/client_secret.json",
+            ".env", "auth.json", "config.live.json", ".git/config",
+        )
         for path in protected:
             with self.subTest(path=path):
                 target = self.repo_root / Path(path)
                 target.parent.mkdir(parents=True, exist_ok=True)
                 target.write_text("fixture only\n", encoding="utf-8")
                 self.assert_rejected(lambda value=path: self.make_materials((value,)), "PROTECTED_PATH")
+
+    def test_credentials_named_ordinary_source_file_remains_readable(self) -> None:
+        source_path = "module/credentials_parser.py"
+        source = "def parse_credentials(raw):\n    return raw.strip()\n"
+        target = self.repo_root / Path(source_path)
+        target.parent.mkdir(parents=True, exist_ok=True)
+        target.write_bytes(source.encode("utf-8"))
+
+        materials = self.make_materials((source_path,))
+        delivered = materials.read(source_path)
+        self.assertEqual(delivered["excerpt"], source)
+        self.assertEqual(delivered["path"], source_path)
+        self.assertEqual(materials.records()[0]["path"], source_path)
 
     def test_allowed_paths_must_be_exact_safe_relative_paths(self) -> None:
         unsafe = (
