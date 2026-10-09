@@ -205,7 +205,7 @@ def validate_contract(contract, policy, usage=None, repository_probe=inspect_git
     for check_id in ids:
         if check_id not in catalog:
             raise ContractError("CHECK_NOT_APPROVED", "Task cannot provide arbitrary engineering commands")
-        check = mapping(catalog[check_id], {"argv", "timeout_seconds", "write_scope", "network", "shell",
+        check = mapping(catalog[check_id], {"argv", "timeout_seconds", "output_bytes_cap", "write_scope", "network", "shell",
                                           "verification", "evidence_sha256"}, "catalog check")
         verify_evidence(check, "approved check " + check_id)
         argv = check["argv"]
@@ -216,6 +216,8 @@ def validate_contract(contract, policy, usage=None, repository_probe=inspect_git
         if check["shell"] is not False or check["write_scope"] != "scratch" or check["network"] != "disabled":
             raise ContractError("UNSAFE_CHECK_POLICY", "No shell expansion, external network or evidence writes")
         number(check["timeout_seconds"], "check timeout", 1, 600)
+        if type(check["output_bytes_cap"]) is not int or not 1 <= check["output_bytes_cap"] <= 1024 * 1024:
+            raise ContractError("INVALID_CHECK_CATALOG", "Check capture requires a per-stream byte cap within 1..1048576")
     limits = mapping(policy["limits"], {"max_native_turns", "max_master_turns", "max_reworks", "max_reply_bytes",
                      "max_summary_chars", "max_evidence_excerpt_bytes"}, "limits")
     for key in ("max_native_turns", "max_master_turns"):

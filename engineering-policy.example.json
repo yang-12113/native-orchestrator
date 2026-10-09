@@ -60,6 +60,7 @@
         "-q"
       ],
       "timeout_seconds": 120,
+      "output_bytes_cap": 4096,
       "write_scope": "scratch",
       "network": "disabled",
       "shell": false,

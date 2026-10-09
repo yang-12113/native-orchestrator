@@ -9,18 +9,22 @@ and a fake repository probe. They never invoke Git, checks, models, or the contr
 from __future__ import annotations
 
 import copy
+import json
 import os
+import sys
 import tempfile
 import unittest
 from pathlib import Path
 from typing import Any
 from unittest.mock import patch
 
+from check_runner import run_check
 from execution_contract import ContractError, canonical_hash, validate_contract
 
 
 WORKTREE = Path(__file__).resolve().parent
 SCRATCH_ROOT = WORKTREE / ".runtime" / "frame-002-tests"
+INTEROP_ROOT = WORKTREE / ".runtime" / "frame-004-interop-tests"
 BASE_COMMIT = "1" * 40
 TREE_HASH = "2" * 40
 EVIDENCE_HASH = "a" * 64
@@ -121,8 +125,9 @@ class ExecutionContractPreflightTests(unittest.TestCase):
             },
             "check_catalog": {
                 "unit": {
-                    "argv": ["E:/python/python.exe", "-B", "-m", "unittest", "-q"],
+                    "argv": [sys.executable, "-B", "-c", "pass"],
                     "timeout_seconds": 120,
+                    "output_bytes_cap": 4096,
                     "write_scope": "scratch",
                     "network": "disabled",
                     "shell": False,
@@ -364,6 +369,164 @@ class ExecutionContractPreflightTests(unittest.TestCase):
         policy = copy.deepcopy(self.policy)
         policy["check_catalog"]["unit"]["shell"] = True
         self._assert_rejected(policy=policy)
+
+    def test_catalog_output_bytes_cap_requires_bounded_exact_integer(self) -> None:
+        invalid_caps = (
+            ("missing", None),
+            ("zero", 0),
+            ("boolean", True),
+            ("string", "4096"),
+            ("above_maximum", 1024 * 1024 + 1),
+        )
+        for label, cap in invalid_caps:
+            with self.subTest(cap=label):
+                policy = copy.deepcopy(self.policy)
+                entry = policy["check_catalog"]["unit"]
+                if label == "missing":
+                    del entry["output_bytes_cap"]
+                else:
+                    entry["output_bytes_cap"] = cap
+                self._assert_rejected(policy=policy)
+
+    def test_validated_catalog_passes_directly_to_fake_runner_without_translation(self) -> None:
+        """The preflight's exact trusted entry is sufficient for the bounded runner."""
+        INTEROP_ROOT.mkdir(parents=True, exist_ok=True)
+        with tempfile.TemporaryDirectory(prefix="case-", dir=INTEROP_ROOT) as directory:
+            root = Path(directory)
+            snapshot = root / "snapshot"
+            scratch = root / "scratch"
+            control = root / "control"
+            evidence = root / "evidence"
+            for path in (snapshot, scratch, control):
+                path.mkdir()
+            (snapshot / "candidate.py").write_text("value = 1\n", encoding="utf-8")
+            (control / "controller-data.txt").write_text("unchanged\n", encoding="utf-8")
+
+            contract = copy.deepcopy(self.contract)
+            contract["input"]["repo_root"] = str(snapshot.resolve())
+            policy = copy.deepcopy(self.policy)
+            policy["approved_repo_roots"] = [str(snapshot.resolve())]
+            trusted_catalog = policy["check_catalog"]
+            original_catalog = copy.deepcopy(trusted_catalog)
+
+            def preflight_probe(repo_root: str | os.PathLike[str]) -> dict[str, Any]:
+                return {
+                    "root": str(Path(repo_root).resolve()),
+                    "head": BASE_COMMIT,
+                    "tree": TREE_HASH,
+                    "clean": True,
+                }
+
+            result = validate_contract(
+                contract, policy, repository_probe=preflight_probe
+            )
+            self.assertFalse(result["dispatchable"])
+            self.assertEqual((result["native_calls"], result["authority_writes"]), (0, 0))
+
+            binding = {
+                "project_id": result["project_id"],
+                "task_id": result["task_id"],
+                "spec_version": contract["spec_version"],
+                "attempt": 1,
+                "contract_hash": result["contract_hash"],
+            }
+            context = {
+                "binding": binding,
+                "candidate_commit": BASE_COMMIT,
+                "snapshot_root": str(snapshot),
+                "scratch_root": str(scratch),
+                "control_root": str(control),
+                "evidence_root": str(evidence),
+            }
+
+            class FakeExecutor:
+                def __init__(self) -> None:
+                    self.calls: list[tuple[list[str], dict[str, Any]]] = []
+                    self.run_root_was_new = False
+                    self.fence_accepted = False
+
+                def __call__(self, argv: list[str], **kwargs: Any) -> dict[str, Any]:
+                    self.calls.append((list(argv), dict(kwargs)))
+                    run_root = Path(kwargs["run_root"])
+                    self.run_root_was_new = not run_root.exists()
+                    self.fence_accepted = kwargs["before_dispatch"]() is True
+                    run_root.mkdir(parents=True)
+                    return {
+                        "exitCode": 0,
+                        "stdout": "fake pass\n",
+                        "stderr": "",
+                        "native_version": "0.162.0-alpha.2",
+                        "permission_profile": "checks",
+                        "profile_hash": "e" * 64,
+                    }
+
+            fake = FakeExecutor()
+
+            def runner_probe(repo_root: str | os.PathLike[str]) -> dict[str, Any]:
+                return {
+                    "root": str(Path(repo_root).absolute()),
+                    "head": BASE_COMMIT,
+                    "tree": TREE_HASH,
+                    "clean": True,
+                }
+
+            # Only the Git metadata query is mocked; the runner's path and manifest
+            # guards still inspect the real isolated fixture directories.
+            with patch("check_runner.inspect_git_input", side_effect=runner_probe):
+                receipt = run_check(
+                    "unit",
+                    trusted_catalog,
+                    context,
+                    before_dispatch=lambda: True,
+                    native_executor=fake,
+                )
+
+            self.assertEqual(receipt["status"], "PASS")
+            self.assertEqual(receipt["candidate_commit"], BASE_COMMIT)
+            self.assertTrue(receipt["input_unchanged"])
+            self.assertEqual(len(fake.calls), 1)
+            self.assertTrue(fake.run_root_was_new)
+            self.assertTrue(fake.fence_accepted)
+            argv, kwargs = fake.calls[0]
+            entry = trusted_catalog["unit"]
+            self.assertEqual(
+                set(entry),
+                {
+                    "argv", "timeout_seconds", "output_bytes_cap", "write_scope",
+                    "network", "shell", "verification", "evidence_sha256",
+                },
+            )
+            self.assertEqual(argv, entry["argv"])
+            self.assertEqual(kwargs["cwd"], str(snapshot.resolve()))
+            self.assertEqual(kwargs["scratch_root"], str(scratch.resolve()))
+            self.assertEqual(kwargs["timeout_ms"], entry["timeout_seconds"] * 1000)
+            self.assertEqual(kwargs["output_bytes_cap"], entry["output_bytes_cap"])
+            self.assertEqual(kwargs["output_bytes_cap"], 4096)
+            self.assertEqual(kwargs["readonly_roots"], [str(snapshot.resolve())])
+            self.assertEqual(
+                set(kwargs["denied_roots"]),
+                {str(control.resolve()), str(evidence.resolve())},
+            )
+            self.assertEqual(trusted_catalog, original_catalog)
+
+            intent = json.loads((evidence / "intent.json").read_text(encoding="utf-8"))
+            self.assertEqual(intent["binding"], binding)
+            self.assertEqual(intent["binding"]["contract_hash"], result["contract_hash"])
+            self.assertEqual(intent["candidate_commit"], BASE_COMMIT)
+            self.assertEqual(intent["check_hash"], canonical_hash(entry))
+            self.assertEqual(
+                intent["native_policy"]["readonly_roots"], [str(snapshot.resolve())]
+            )
+            self.assertEqual(
+                intent["native_policy"]["writable_roots"], [str(scratch.resolve())]
+            )
+            self.assertEqual(
+                set(intent["native_policy"]["denied_roots"]),
+                {str(control.resolve()), str(evidence.resolve())},
+            )
+            self.assertEqual(intent["native_policy"]["network"], "disabled")
+            self.assertEqual(intent["native_policy"]["model_turns"], 0)
+            self.assertIs(intent["native_policy"]["auth_copied"], False)
 
     def test_insufficient_or_already_consumed_budget_is_rejected(self) -> None:
         contract = copy.deepcopy(self.contract)
