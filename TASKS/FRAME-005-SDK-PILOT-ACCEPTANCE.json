@@ -1,0 +1,81 @@
+{
+  "schema_version": "native-orchestrator.fixture-acceptance/0.3",
+  "task_id": "FRAME-005-SDK-PILOT",
+  "status": "ACCEPTED_NATIVE_FIXTURE_SLICE_ONLY",
+  "accepted_on": "2026-10-10",
+  "candidate_code_commit": "9e062d607dfc67c6d6d911ce716c06e93c2c612c",
+  "native_report": {
+    "status": "LOCAL_CANDIDATE_ACCEPTED",
+    "scope": "OWNED_FIXTURE_SLICE_ONLY",
+    "production_queue_enabled": false,
+    "base_commit": "18141c54e11cc79e4d872add20f233cab98ce7cf",
+    "task_branch": "task/sdk-direct-pilot-20261010-52a7",
+    "baseline_quality_failure_observed": true,
+    "model_turns": 2,
+    "candidate_commit": "15bbb6e6d3a020db71e792d7427eac5d2f98b9c5",
+    "final_main_commit": "15bbb6e6d3a020db71e792d7427eac5d2f98b9c5",
+    "candidate_equals_final": true,
+    "checks": "PASS",
+    "check_receipt_sha256": "db43b7e85e540a7d972439726c53cbb37668e5221666fe93d6da68e8ac469fb1",
+    "review": "PASS",
+    "reviewer_thread_id": "01a1217d-de46-7be0-ac6b-5a2fcdceddef",
+    "executor_thread_id": "01a1217d-7bf6-7a62-8086-a92dd089db95",
+    "fresh_reviewer": true,
+    "input_unchanged_through_review": true,
+    "real_project_main_modified": false,
+    "sdk": "0.162.0",
+    "runtime": "0.162.0",
+    "remote": "REMOTE_DISABLED",
+    "check_native_version": "0.162.0-alpha.2",
+    "readonly_policy_requested": true,
+    "full_controller_queue_and_crash_recovery_verified": false,
+    "sqlite_run_state": "ACCEPTED",
+    "runtime_authority": "E:\\零碎\\native-orchestrator-v03\\.runtime\\sdk-direct-pilot-20261010-52a7\\control\\state.sqlite"
+  },
+  "regression": {
+    "existing_run": 148,
+    "existing_passed": 143,
+    "existing_skipped": 5,
+    "new_sdk_fake_tests": 9,
+    "new_sdk_fake_passed": 9,
+    "failures": 0,
+    "errors": 0
+  },
+  "independent_review_scope": "frozen synthetic candidate only; not independent audit of adapter/driver production suitability",
+  "actual_reviewer_reads": [
+    {
+      "path": "calculator.py",
+      "candidate_commit": "15bbb6e6d3a020db71e792d7427eac5d2f98b9c5",
+      "sha256": "ba1a531f581d2e6094e978ed6f7aca7a8d92eeb62c6e7ad73ee692f7f18bc772",
+      "returned_bytes": 32,
+      "source": "SDK commandExecution git show output inspected by root"
+    },
+    {
+      "path": "test_calculator.py",
+      "candidate_commit": "15bbb6e6d3a020db71e792d7427eac5d2f98b9c5",
+      "sha256": "1efe4c835d41a9db696f18d005cf3981bcf38a1e1149c810b4e791f74ce44315",
+      "returned_bytes": 280,
+      "source": "SDK commandExecution git show output inspected by root"
+    }
+  ],
+  "reported_native_usage": {
+    "total_tokens": 130399,
+    "input_tokens": 128066,
+    "cached_input_tokens": 94464,
+    "output_tokens": 2333,
+    "reasoning_output_tokens": 968,
+    "uncached_input_tokens": 33602
+  },
+  "usage_caveat": "Two SDK turns contain multiple underlying model/tool-loop requests; usage is not subscription credits or a price.",
+  "binding": "TASKS/FRAME-005-SDK-EVIDENCE-BINDING.json",
+  "not_verified": [
+    "production repo queue/proof integration",
+    "concurrent promotion CAS",
+    "full Git/SQLite crash matrix",
+    "adversarial denial of writes in SDK reviewer profile",
+    "actual OS file/directory symlink",
+    "remote push"
+  ],
+  "windows_acl_runtime_helper_modified": false,
+  "original_runtime_sources_changed": false
+}

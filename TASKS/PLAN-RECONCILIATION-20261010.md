@@ -29,3 +29,7 @@
 来源：[官方 SDK](https://learn.chatgpt.com/docs/codex-sdk)、[官方 Python API](https://github.com/openai/codex/blob/main/sdk/python/docs/api-reference.md)、[官方 app-server](https://learn.chatgpt.com/docs/app-server)、[Git merge](https://git-scm.com/docs/git-merge)。本机 SDK public signatures 和固定依赖已实读；真实权限/模型能力尚待试点回执。
 
 可继续执行：先零模型 capability probe，再写薄 SDK adapter 与一个新自有 fixture，目标 Executor/Reviewer 各1回合，总上限3。若环境阻断，留证据停止该链；本轮不修系统、不换大权限、不加付费路线，不动真实 remote/生产/凭据。
+
+执行检查点：源码候选9e062d6完成原148项+新增9项fake测试；SDK真实Executor与fresh只读Reviewer共2个turn跑通fixture，candidate与fixture main同为15bbb6e，限定接纳见FRAME-005-SDK-PILOT-ACCEPTANCE.json。生产Controller工程接线尚未做，不能标完整G2。
+
+替换范围补充：SDK已替代新普通角色的stdio进程、JSON-RPC关联、初始化、thread/turn事件收集、final response、usage和interrupt；保留的是Controller的预算/lease/身份与证据验证、本地脱敏和legacy动态读回执。0.162.0还提供低层CodexClient.request及approval_handler，可承载薄协议适配；“高层没有封装”不等于SDK transport绝对不能承载。不为本轮新建dynamic-tool路由或迁移已验收checks，后续按具体能力证据评估旧RPC替换。

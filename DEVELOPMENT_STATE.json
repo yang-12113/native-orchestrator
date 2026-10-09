@@ -11,9 +11,9 @@
   "baseline_code_commit": "b97788f0c7f3318874765c0fcd664d4bc05e80ed",
   "baseline_tag": "controller-v0.2.1-verified",
   "baseline_regression_tests": 59,
-  "current_phase": "FRAME_005_SDK_DIRECT_WORKTREE_PILOT",
-  "current_task": "FRAME-005",
-  "next_action": "Freeze thin SDK adapter and fixture driver; fake negative tests then one Luna/max direct-worktree Executor plus fresh read-only Reviewer. Target2 turns, hard cap3; no production queue/main changes or Windows/auth modifications.",
+  "current_phase": "FRAME_005_SDK_FIXTURE_ACCEPTED_FRAME006_PENDING",
+  "current_task": "FRAME-006",
+  "next_action": "Write narrowly scoped FRAME006 ticket to integrate verified SDK direct-worktree route with existing Controller engineering task/proof. No new live pilot replay; production gate remains closed. Keep two-turn evidence and defer full promotion/recovery/remote.",
   "code_worktree": "E:\\零碎\\native-orchestrator-v03",
   "code_branch": "codex/engineering-v03",
   "resume_files": [
@@ -75,6 +75,12 @@
       "status": "ACCEPTED_FAKE_READONLY_MATERIAL_API_ONLY",
       "candidate": "2731c3de32abc9e0557435ddf92f0b78311ac53a",
       "evidence": "E:\\零碎\\native-orchestrator-v03\\TASKS\\FRAME-005-MATERIAL-ACCEPTANCE.json"
+    },
+    {
+      "id": "FRAME-005-SDK-PILOT",
+      "status": "ACCEPTED_NATIVE_FIXTURE_SLICE_ONLY",
+      "candidate": "9e062d607dfc67c6d6d911ce716c06e93c2c612c",
+      "evidence": "TASKS/FRAME-005-SDK-PILOT-ACCEPTANCE.json"
     }
   ],
   "tasks": [
@@ -121,7 +127,7 @@
     {
       "id": "FRAME-005",
       "owner": "root; one fresh native Executor and Reviewer",
-      "status": "SDK_DIRECT_WORKTREE_PILOT",
+      "status": "ACCEPTED_FIXTURE_SLICE_CONTROLLER_INTEGRATION_PENDING",
       "dependencies": [
         "FRAME-003",
         "FRAME-004"
@@ -130,8 +136,8 @@
     },
     {
       "id": "FRAME-006",
-      "owner": "root / Luna tests / independent Luna review",
-      "status": "PLANNED",
+      "owner": "root; limited independent validation after implementation",
+      "status": "NEXT_NOT_STARTED",
       "dependencies": [
         "FRAME-005"
       ]
@@ -187,7 +193,7 @@
   ],
   "gates": {
     "G1": "PASS_RESTRICTED_WINDOWS",
-    "G2": "IN_PROGRESS_FIXTURE_NOT_ACCEPTED",
+    "G2": "FIXTURE_SLICE_PASS_CONTROLLER_INTEGRATION_PENDING",
     "G3": "NOT_STARTED",
     "G4": "NOT_STARTED"
   },
@@ -230,17 +236,18 @@
   "baseline_binding_evidence": "TASKS/PLAN-BASELINE-BINDING.json",
   "plan_candidate_commit": "13360a9",
   "authoritative_development_state": "E:\\零碎\\native-orchestrator\\DEVELOPMENT_STATE.json",
-  "current_candidate_commit": "2731c3de32abc9e0557435ddf92f0b78311ac53a",
+  "current_candidate_commit": "9e062d607dfc67c6d6d911ce716c06e93c2c612c",
   "latest_checks": {
-    "tests_run": 148,
-    "passed": 143,
+    "candidate_commit": "9e062d607dfc67c6d6d911ce716c06e93c2c612c",
+    "tests_run": 157,
+    "passed": 152,
+    "skipped": 5,
     "failed": 0,
     "errors": 0,
-    "skipped": 5,
-    "candidate_commit": "2731c3de32abc9e0557435ddf92f0b78311ac53a",
     "source_unchanged": true,
-    "evidence": "E:\\零碎\\native-orchestrator-v03\\.runtime\\frame-005-material-frozen-unified-report.json",
-    "native_model_turns": 0
+    "evidence": "TASKS/FRAME-005-SDK-EVIDENCE-BINDING.json",
+    "native_model_turns": 2,
+    "scope": "148 existing regression plus9 isolated SDK fake tests; native fixture separately verified"
   },
   "collaboration_files": {
     "agent_rules": "AGENTS.md",
@@ -328,20 +335,23 @@
   ],
   "frame005_status": {
     "materials": "ACCEPTED_FAKE_API_ONLY",
-    "native_role": "SDK_STARTUP_PARAMETERS_ONLY",
+    "native_role": "NATIVE_SDK_FIXTURE_VERIFIED_ONLY",
     "proposal_binding": "DEFERRED_QUARANTINE",
     "production_route": "NOT_IMPLEMENTED",
     "live_proposal_model_turns": 0,
-    "default_route": "OFFICIAL_SDK_DIRECT_WORKTREE"
+    "default_route": "OFFICIAL_SDK_DIRECT_WORKTREE",
+    "live_direct_model_turns": 2,
+    "material_mode": "OPTIONAL_QUARANTINE"
   },
   "sdk_capability": {
     "sdk": "0.162.0",
     "pinned_runtime": "0.162.0",
     "environment": "E:\\零碎\\native-orchestrator-v03\\.runtime\\sdk-0.162.0-pilot-52a7",
     "probe": "E:\\零碎\\native-orchestrator-v03\\.runtime\\sdk-capability-20261010-52a7\\report-attempt2.json",
-    "status": "STARTUP_AND_THREAD_PARAMETERS_VERIFIED_ONLY",
-    "model_turns": 0,
-    "actual_filesystem_permissions": "NOT_YET_VERIFIED"
+    "status": "NATIVE_DIRECT_EDIT_AND_FRESH_REVIEW_FIXTURE_VERIFIED",
+    "model_turns": 2,
+    "actual_filesystem_permissions": "executor_write_observed; reviewer_policy_readonly_and_no_writes_observed; active_write_denial_not_probed",
+    "pilot_acceptance": "TASKS/FRAME-005-SDK-PILOT-ACCEPTANCE.json"
   },
   "plan_revision": {
     "external_package_date": "2026-10-09",

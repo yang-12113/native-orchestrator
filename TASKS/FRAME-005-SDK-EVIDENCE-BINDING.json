@@ -1,0 +1,88 @@
+{
+  "schema_version": "native-orchestrator.sdk-pilot-evidence/1",
+  "candidate_code_commit": "9e062d607dfc67c6d6d911ce716c06e93c2c612c",
+  "source_sha256": {
+    "codex_sdk_adapter.py": "72a2f019e589f0b5b6f987629cc90d78aca81d06f3c988ff70791daa255e316e",
+    "run_direct_worktree_pilot.py": "690e752a03ca457492e0761a33b04633aebf4dcd65e1c69c027aa1f75770f5ed",
+    "test_codex_sdk_adapter.py": "b751025ee531b8459988df5314c8ca208f7e2a0928a8602abbb5d5d3b622eeea"
+  },
+  "fixture_base_commit": "18141c54e11cc79e4d872add20f233cab98ce7cf",
+  "fixture_candidate_commit": "15bbb6e6d3a020db71e792d7427eac5d2f98b9c5",
+  "fixture_final_main_commit": "15bbb6e6d3a020db71e792d7427eac5d2f98b9c5",
+  "artifacts": [
+    {
+      "path": "E:\\零碎\\native-orchestrator-v03\\.runtime\\frame005-sdk-9e062d6-full-regression.json",
+      "sha256": "be1d28e0670abf3404738d538e88dbe901ef57d471b71c3e2fd49d7d1f1a0e67",
+      "bytes": 7278
+    },
+    {
+      "path": "E:\\零碎\\native-orchestrator-v03\\.runtime\\frame005-sdk-9e062d6-adapter-tests.log",
+      "sha256": "fffb0be62ea7dcb8e45656e8a7ba393e22bb06580e36785090a9d871659a8aaf",
+      "bytes": 1523
+    },
+    {
+      "path": "E:\\零碎\\native-orchestrator-v03\\.runtime\\sdk-direct-pilot-20261010-52a7\\report.json",
+      "sha256": "d1b25d8884734566bc6a3ef89d6375aee79f80046a997a827e257a9ea02799d5",
+      "bytes": 1111
+    },
+    {
+      "path": "E:\\零碎\\native-orchestrator-v03\\.runtime\\sdk-direct-pilot-20261010-52a7\\control\\executor.json",
+      "sha256": "1615f421c568fc6fb421b3df0652af3e5fe1e5c11f458e5182e1bfbae8360a14",
+      "bytes": 7190
+    },
+    {
+      "path": "E:\\零碎\\native-orchestrator-v03\\.runtime\\sdk-direct-pilot-20261010-52a7\\control\\reviewer.json",
+      "sha256": "b0ed57c9306a12c4aaeceaf139f852c9e2c9d30277c837dbbef1bc6e25ef865d",
+      "bytes": 10736
+    },
+    {
+      "path": "E:\\零碎\\native-orchestrator-v03\\.runtime\\sdk-direct-pilot-20261010-52a7\\control\\review-bound.json",
+      "sha256": "62bc6258a190b28b821ba4129d81ab60007265366d538e7bc896d935a98a214f",
+      "bytes": 668
+    },
+    {
+      "path": "E:\\零碎\\native-orchestrator-v03\\.runtime\\sdk-direct-pilot-20261010-52a7\\evidence1\\receipt.json",
+      "sha256": "db43b7e85e540a7d972439726c53cbb37668e5221666fe93d6da68e8ac469fb1",
+      "bytes": 1286
+    },
+    {
+      "path": "E:\\零碎\\native-orchestrator-v03\\.runtime\\sdk-direct-pilot-20261010-52a7\\evidence1\\intent.json",
+      "sha256": "10e9d667328537ea1aae13795f06fdfe0176991374ea83775062370aa29762d1",
+      "bytes": 2001
+    },
+    {
+      "path": "E:\\零碎\\native-orchestrator-v03\\.runtime\\sdk-direct-pilot-20261010-52a7\\evidence1\\input-manifest.json",
+      "sha256": "0274784e0af45a9839ed85e740a56774ce5e9434b4f416404ae771d80a141a10",
+      "bytes": 317
+    },
+    {
+      "path": "E:\\零碎\\native-orchestrator-v03\\.runtime\\sdk-direct-pilot-20261010-52a7\\evidence1\\stdout.txt",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    {
+      "path": "E:\\零碎\\native-orchestrator-v03\\.runtime\\sdk-direct-pilot-20261010-52a7\\evidence1\\stderr.txt",
+      "sha256": "60064b4f23271bfc6ef297a0a2b9ce9a54ca1c96a2f3c131e53b17056406637c",
+      "bytes": 154
+    }
+  ],
+  "actual_reviewer_full_file_reads": [
+    {
+      "path": "calculator.py",
+      "candidate_commit": "15bbb6e6d3a020db71e792d7427eac5d2f98b9c5",
+      "sha256": "ba1a531f581d2e6094e978ed6f7aca7a8d92eeb62c6e7ad73ee692f7f18bc772",
+      "returned_bytes": 32,
+      "source": "SDK commandExecution git show output inspected by root"
+    },
+    {
+      "path": "test_calculator.py",
+      "candidate_commit": "15bbb6e6d3a020db71e792d7427eac5d2f98b9c5",
+      "sha256": "1efe4c835d41a9db696f18d005cf3981bcf38a1e1149c810b4e791f74ce44315",
+      "returned_bytes": 280,
+      "source": "SDK commandExecution git show output inspected by root"
+    }
+  ],
+  "root_hash_verification": "PASS",
+  "review_binding_validated": true,
+  "production_controller_engineering_integration": false
+}
