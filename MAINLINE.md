@@ -1,12 +1,12 @@
 # 主线恢复入口
 
-更新时间：2026-10-08。开发计划：ENGINEERING_PLAN.md；可核对进度：DEVELOPMENT_STATE.json。
+更新时间：2026-10-09。开发计划：ENGINEERING_PLAN.md；可核对进度：DEVELOPMENT_STATE.json。
 
 唯一主线：在已验收 v0.2.1 文本控制器上实现 v0.3 受限自动工程闭环：冻结 Git 输入 → 限定修改 → 批准的程序检查 → 独立冻结版本审查 → 有限返工 → 接纳/合入 → 中断对账与恢复。
 
 当前事实：发布基线 b97788f0c7f3318874765c0fcd664d4bc05e80ed，标签 controller-v0.2.1-verified；实际验收代码候选 bda744b4074309dcc02f67da5522f22a3d8942cb。两提交只差交付文档，运行源码哈希一致，绑定证据 TASKS/PLAN-BASELINE-BINDING.json。59项隔离测试、独审和原生文本自检通过。v0.3仍未实现，不能提交 DESIGN_ONLY 样例或声称工程链路通过。计划独审已PASS；FRAME-002独立预检已验收（代码候选19d8150）；78项运行/77通过/1环境跳过，工程队列仍未启用。代码位于隔离工作树E:\零碎\native-orchestrator-v03。权威开发状态位于原源码目录的DEVELOPMENT_STATE.json，工作树内为同步副本。
 
-恢复顺序：只读本文件 → DEVELOPMENT_STATE.json → 当前 TASKS 票据 → 该票据引用的必要源码/差异。校验实际 HEAD、工作树改动和报告中的 commit；存在未提交工作先识别归属，不自动清空。不要为恢复重读全部聊天、日志或历史研究。
+恢复顺序：AGENTS.md → PROJECT.md → 只读本文件 → DEVELOPMENT_STATE.json → 当前 TASKS 票据 → 该票据引用的必要源码/差异。校验实际 HEAD、工作树改动和报告中的 commit；存在未提交工作先识别归属，不自动清空。不要为恢复重读全部聊天、日志或历史研究。
 
 当前下一步：FRAME-004 批准检查与执行边界，票据E:\零碎\native-orchestrator-v03\TASKS\FRAME-004.md。FRAME-003独审通过，96项运行/93通过/3环境跳过；实际Git工作区、提案和冻结幂等通过。没有运行模型或工程检查，G1仍IN_PROGRESS，工程队列仍禁用。
 
@@ -19,3 +19,5 @@
 范围边界：本机源码及新的测试目录；保留原 data-live、私有配置/凭据、旧 ACCEPTANCE.json 和既有校招成果。校招只作为后期独立副本上的工程使用验证候选，不开发新业务或迁移旧业务。沙箱兼容性沿用另一个AI的交接提示词，不在本主线重复修全局配置；不新增付费API、不发布远端或发送其他聊天消息。
 
 完成依据：ENGINEERING_PLAN.md 的 G1–G4 各有实际证据；MOCK、LIVE、UNKNOWN分开；未经相应工程验收整体保持PARTIAL。遇到问题先保留证据，回退本次失败提交，基线和旧数据保留。
+
+项目入口已补齐：AGENTS.md规定协作与恢复，PROJECT.md保存稳定目标，DECISIONS.md记录已确认选择。FRAME-004当前实验代码未合入，真实命令边界probe已通过，fake runner宿主11项10通过/1环境跳过；具体下一步见权威状态，不把schema或fake当完整工程通过。

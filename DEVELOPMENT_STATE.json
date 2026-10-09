@@ -1,7 +1,7 @@
 {
   "schema_version": "native-orchestrator.development-state/1",
   "project_id": "native-orchestrator-v03",
-  "updated_on": "2026-10-08",
+  "updated_on": "2026-10-09",
   "timezone": "Asia/Shanghai",
   "maintained_by": "root",
   "objective": "实现受限自动工程执行闭环，并通过真实工程与恢复验收",
@@ -11,12 +11,14 @@
   "baseline_code_commit": "b97788f0c7f3318874765c0fcd664d4bc05e80ed",
   "baseline_tag": "controller-v0.2.1-verified",
   "baseline_regression_tests": 59,
-  "current_phase": "FRAME_004_EXEC_BOUNDARY_SPIKE",
+  "current_phase": "FRAME_004_RUNNER_IMPLEMENTATION",
   "current_task": "FRAME-004",
-  "next_action": "只读核对当前安装版本与command/exec schema，再在新benign fixture实测无需模型的受限argv执行：scratch写入允许，冻结repo/控制目录写入与非批准网络拒绝。禁用thread/shellCommand替代，无法证明边界则保持BLOCKED/UNKNOWN。",
+  "next_action": "按AGENTS/PROJECT恢复：FRAME-004真实native边界probe已PASS(0模型)，check_runner宿主fake11项10通过1链接跳过；保持严格路径校验，下一步真实native执行runner、完善错误/输出/输入漂移证据，冻结候选与独审。实验代码仍在codex/engineering-v03未合入。",
   "code_worktree": "E:\\零碎\\native-orchestrator-v03",
   "code_branch": "codex/engineering-v03",
   "resume_files": [
+    "AGENTS.md",
+    "PROJECT.md",
     "MAINLINE.md",
     "DEVELOPMENT_STATE.json",
     "E:\\零碎\\native-orchestrator-v03\\TASKS\\FRAME-004.md"
@@ -224,5 +226,26 @@
     "skipped": 3,
     "evidence": "E:\\零碎\\native-orchestrator-v03\\.runtime\\frame-003-reviewed-unified-report.json",
     "native_calls": 0
+  },
+  "collaboration_files": {
+    "agent_rules": "AGENTS.md",
+    "stable_project": "PROJECT.md",
+    "decisions": "DECISIONS.md",
+    "mainline": "MAINLINE.md",
+    "authority": "E:\\零碎\\native-orchestrator\\DEVELOPMENT_STATE.json"
+  },
+  "frame004_checks": {
+    "native_boundary": "NATIVE_EXEC_BOUNDARY_VERIFIED",
+    "native_probe_evidence": "E:\\零碎\\native-orchestrator-v03\\.runtime\\frame-004-native-probe-20261009\\report.json",
+    "model_turns": 0,
+    "fake_runner_host_tests": {
+      "run": 11,
+      "passed": 10,
+      "failed": 0,
+      "errors": 0,
+      "skipped": 1,
+      "evidence": "E:\\零碎\\native-orchestrator-v03\\.runtime\\frame-004-tests\\host-fake-fixed.log"
+    },
+    "tool_sandbox_fake_first": "WinError5 strict canonical path under tool environment; host passed without weakening guard"
   }
 }

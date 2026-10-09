@@ -1,5 +1,8 @@
 # 原生协作控制器 v0.2.1 / PARTIAL
 
+项目接手先读 [AGENTS.md](AGENTS.md) 和 [PROJECT.md](PROJECT.md)，再从 [MAINLINE.md](MAINLINE.md) 与 [DEVELOPMENT_STATE.json](DEVELOPMENT_STATE.json) 接续当前任务；已确认取舍在 [DECISIONS.md](DECISIONS.md)。
+
+
 2026-10-08 底座修复及验收见 [HARDENING_VALIDATION.md](E:/零碎/native-orchestrator/HARDENING_VALIDATION.md)。状态/决策分页、过期尝试隔离、事务预算、完整证据校验、决策通知与思考档下传已实施；v0.3 工程能力和权限关卡仍待实现，见 [优化计划](E:/零碎/native-orchestrator/项目计划优化_2026-10-07.md)。
 
 旧 data-live 和 ACCEPTANCE.json 是 v0.2 历史证据，未迁移或重跑。新版在写入前拒绝旧 schema，自动迁移已禁用；旧记录只读查看使用 watch_project.py。完整迁移需另行实现和明确对账，复制目录本身不会将旧 ACCEPTED 升级为新 proof。
