@@ -17,7 +17,8 @@ def main():
     args = parser.parse_args()
     modules = [__import__(name) for name in (
         "test_controller", "test_native_adapters", "test_watch_project",
-        "test_hardening", "test_codex_protocol", "test_execution_contract", "test_repo_workspace")]
+        "test_hardening", "test_codex_protocol", "test_execution_contract", "test_repo_workspace",
+        "test_check_runner", "test_native_check_exec")]
     with tempfile.TemporaryDirectory(prefix="native-controller-tests-", dir=ROOT) as directory:
         isolated = Path(directory)
         (isolated / ".runtime").mkdir()
