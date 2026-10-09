@@ -1,0 +1,34 @@
+{
+  "schema_version": "native-orchestrator.submodule-acceptance/0.3",
+  "task_id": "FRAME-005-MATERIAL",
+  "status": "ACCEPTED_FAKE_READONLY_MATERIAL_API_ONLY",
+  "candidate_commit": "2731c3de32abc9e0557435ddf92f0b78311ac53a",
+  "accepted_on": "2026-10-09",
+  "full_regression": {
+    "run": 148,
+    "passed": 143,
+    "skipped": 5,
+    "failures": 0,
+    "errors": 0,
+    "source_unchanged": true,
+    "evidence": "E:\\零碎\\native-orchestrator-v03\\.runtime\\frame-005-material-frozen-unified-report.json",
+    "sha256": "2b0535077cc6aad6d797ddf0242a60d8f8b1a1f6e925d60dcebcd831a6ca1c15"
+  },
+  "targeted_material_tests": {
+    "run": 15,
+    "passed": 14,
+    "skipped": 1,
+    "failures": 0,
+    "errors": 0,
+    "evidence": "E:\\零碎\\native-orchestrator-v03\\.runtime\\frame-005-material-host-review-fixed-tests.log"
+  },
+  "independent_review": "E:\\零碎\\native-orchestrator-v03\\TASKS\\FRAME-005-MATERIAL-REVIEW-R02.md",
+  "known_unknowns": [
+    "actual OS symlink behavior; tests skipped WinError1314"
+  ],
+  "live_native_role_verified": false,
+  "file_proposal_route_implemented": false,
+  "frame005_complete": false,
+  "controller_engineering_queue_enabled": false,
+  "next_action": "Implement root-owned native_repo_turn.py and repo_proposal.py against FRAME005 named permissions/bounded JSON; fake protocol test and freeze review before exact one-turn Luna/max pilot."
+}

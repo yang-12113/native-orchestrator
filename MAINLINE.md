@@ -15,3 +15,5 @@
 Git：稳定目录E:/零碎/native-orchestrator；开发worktree E:/零碎/native-orchestrator-v03，codex/engineering-v03；另保留hardening基线。CLI worktree与Codex托管列表不同，不因设置页空白就判断没有worktree。开发代码尚未合入main，无remote/PR/推送。阶段/压缩前记录实际commit、证据/限制/下一动作并提交检查点；失败只回退本次失败提交，保护基线与旧数据。
 
 稳定目标PROJECT.md、协作AGENTS.md、阶段分工ENGINEERING_PLAN.md、确认选择DECISIONS.md、范围验收TASKS/共同防止主线漂移，事实仍需当前源码和证据核对。
+
+FRAME005材料子模块最新检查点：冻结2731c3d，统一148运行/143通过/5系统symlink权限跳过，15项材料定向14通过1跳过，独立MATERIAL ONLY复审PASS。源码/测试已提交，根控制入口/嵌套凭据保护、每读输入漂移复核、EOF回执已修。native_repo_turn.py/repo_proposal.py尚不存在；下一动作按FRAME005写角色权限与文件提案绑定，再fake协议/独审和精确原生试点；整个FRAME005/G2未完成。
