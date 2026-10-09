@@ -12,3 +12,9 @@
 
 
 - D008：G1第一版接纳仅限本机Windows普通目录/Git文本输入、真实junction及Git链接模式拒绝；实际OS symlink仍UNKNOWN。skip不当PASS，首批模型试点只用自有普通目录和无Git链接的新小仓库。依据：FRAME-004-ACCEPTANCE.json与REVIEW-R04。
+
+- D009（2026-10-10）：普通路径改官方SDK direct-worktree；材料/proposal保留quarantine，FRAME003 detached接口不放宽。旧原生proposal DSL停止扩写。依据：用户对账请求与PLAN-RECONCILIATION-20261010。
+- D010：SDK覆盖普通角色transport/lifecycle；旧dynamicTools、command/exec、命名checks保留薄RPC，Controller预算/lease/proof/恢复保留。本机SDK0.162.0高层models不自动翻页，缺能力不默认私有字段或新runtime。
+- D011：检查/审查绑定exact SHA；main变化需merge/重测/重审，串行promotion重核expected main。ff-only不替代栅栏、intent与Git/DB对账；V1无自动rebase/force。
+- D012：remote失败只REMOTE_PENDING/ERROR，不撤销本地ACCEPTED。MAINLINE仅入口，开发JSON只阶段，Git/SQLite分别掌权，CURRENT最多投影；迁移/managed-worktree/升级守护后置。
+- D013：本次目标2、硬上限3真实turn，repair<=1；检查FAIL可repair后首审，Review FAIL后repair需再审超过预算则停NEEDS_REVIEW，禁止旧PASS用于新SHA。spike不另花turn，Windows不改ACL/helper/runtime。

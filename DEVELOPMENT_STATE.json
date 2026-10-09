@@ -1,7 +1,7 @@
 {
   "schema_version": "native-orchestrator.development-state/1",
   "project_id": "native-orchestrator-v03",
-  "updated_on": "2026-10-09",
+  "updated_on": "2026-10-10",
   "timezone": "Asia/Shanghai",
   "maintained_by": "root",
   "objective": "实现受限自动工程执行闭环，并通过真实工程与恢复验收",
@@ -11,9 +11,9 @@
   "baseline_code_commit": "b97788f0c7f3318874765c0fcd664d4bc05e80ed",
   "baseline_tag": "controller-v0.2.1-verified",
   "baseline_regression_tests": 59,
-  "current_phase": "FRAME_005_NATIVE_ROLE_AND_PROPOSAL_IMPLEMENTATION",
+  "current_phase": "FRAME_005_SDK_DIRECT_WORKTREE_PILOT",
   "current_task": "FRAME-005",
-  "next_action": "Implement root-owned native_repo_turn.py and repo_proposal.py against FRAME005 named permissions/bounded JSON; fake protocol test and freeze review before exact one-turn Luna/max pilot. No native_repo_turn.py/repo_proposal.py exists yet; material module accepted only, not complete FRAME005. Keep original v0.2.1/live data and old repo_patch rejection.",
+  "next_action": "Freeze thin SDK adapter and fixture driver; fake negative tests then one Luna/max direct-worktree Executor plus fresh read-only Reviewer. Target2 turns, hard cap3; no production queue/main changes or Windows/auth modifications.",
   "code_worktree": "E:\\零碎\\native-orchestrator-v03",
   "code_branch": "codex/engineering-v03",
   "resume_files": [
@@ -120,12 +120,13 @@
     },
     {
       "id": "FRAME-005",
-      "owner": "root / Luna adapter helpers",
-      "status": "INTERFACE_DESIGN",
+      "owner": "root; one fresh native Executor and Reviewer",
+      "status": "SDK_DIRECT_WORKTREE_PILOT",
       "dependencies": [
         "FRAME-003",
         "FRAME-004"
-      ]
+      ],
+      "ticket": "TASKS/FRAME-005.md"
     },
     {
       "id": "FRAME-006",
@@ -186,7 +187,7 @@
   ],
   "gates": {
     "G1": "PASS_RESTRICTED_WINDOWS",
-    "G2": "NOT_STARTED",
+    "G2": "IN_PROGRESS_FIXTURE_NOT_ACCEPTED",
     "G3": "NOT_STARTED",
     "G4": "NOT_STARTED"
   },
@@ -327,9 +328,25 @@
   ],
   "frame005_status": {
     "materials": "ACCEPTED_FAKE_API_ONLY",
-    "native_role": "NOT_IMPLEMENTED",
-    "proposal_binding": "NOT_IMPLEMENTED",
+    "native_role": "SDK_STARTUP_PARAMETERS_ONLY",
+    "proposal_binding": "DEFERRED_QUARANTINE",
     "production_route": "NOT_IMPLEMENTED",
-    "live_proposal_model_turns": 0
+    "live_proposal_model_turns": 0,
+    "default_route": "OFFICIAL_SDK_DIRECT_WORKTREE"
+  },
+  "sdk_capability": {
+    "sdk": "0.162.0",
+    "pinned_runtime": "0.162.0",
+    "environment": "E:\\零碎\\native-orchestrator-v03\\.runtime\\sdk-0.162.0-pilot-52a7",
+    "probe": "E:\\零碎\\native-orchestrator-v03\\.runtime\\sdk-capability-20261010-52a7\\report-attempt2.json",
+    "status": "STARTUP_AND_THREAD_PARAMETERS_VERIFIED_ONLY",
+    "model_turns": 0,
+    "actual_filesystem_permissions": "NOT_YET_VERIFIED"
+  },
+  "plan_revision": {
+    "external_package_date": "2026-10-09",
+    "reconciled_on": "2026-10-10",
+    "receipt": "TASKS/PLAN-RECONCILIATION-20261010.md",
+    "source_snapshot_commit": "ea73c49ab1e5d413ff85cb79935502d3ef1df1c0"
   }
 }

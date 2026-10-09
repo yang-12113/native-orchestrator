@@ -1,0 +1,43 @@
+{
+  "model_turns": 0,
+  "sdk_version": "0.162.0",
+  "pinned_runtime": "0.162.0",
+  "auth_file_access_by_script": false,
+  "global_config_modified": false,
+  "sdk_authentication": "normal existing login, no login/copy/logout operations",
+  "override_hash": "915a584f4bc3c11f2de74460b74784775c40d4ee11d3baa1f385791c0382dffa",
+  "status": "STARTUP_AND_THREAD_PARAMETERS_VERIFIED_ONLY",
+  "threads": [
+    {
+      "sandbox_requested": "workspace-write",
+      "thread_id": "01a12169-003e-7f72-ad82-9a02794620bf",
+      "observed_model": "gpt-6-luna",
+      "observed_effort": "max",
+      "cwd": "root='E:\\\\零碎\\\\native-orchestrator-v03\\\\.runtime\\\\sdk-capability-20261010-52a7\\\\ordinary-fixture-attempt2'",
+      "native_version": "0.162.0"
+    },
+    {
+      "sandbox_requested": "read-only",
+      "thread_id": "01a12169-0158-7543-a24d-43427772c8ef",
+      "observed_model": "gpt-6-luna",
+      "observed_effort": "max",
+      "cwd": "root='E:\\\\零碎\\\\native-orchestrator-v03\\\\.runtime\\\\sdk-capability-20261010-52a7\\\\ordinary-fixture-attempt2'",
+      "native_version": "0.162.0"
+    }
+  ],
+  "native_user_agent": "Codex Desktop/0.162.0 (Windows 10.0.26200; x86_64) dumb (codex_python_sdk; 0.162.0)",
+  "account_type": "chatgpt",
+  "model_available": true,
+  "model_catalog_next_cursor_present": false,
+  "supported_efforts": [
+    "low",
+    "medium",
+    "high",
+    "xhigh",
+    "max"
+  ],
+  "actual_filesystem_permissions": "NOT_TESTED_NO_TURN",
+  "source_probe_sha256": "ec3894337ddb3053a1455fedb460406c120c0fc2b6c6df3d1068f17f069e93ac",
+  "probe_report_sha256": "69d7d4aa1e77e9702a8d5020fb4170d353b5eeb91a58da7b77f8849e6b62e3c7",
+  "scope": "SDK startup and thread parameters only; actual model filesystem use not verified"
+}

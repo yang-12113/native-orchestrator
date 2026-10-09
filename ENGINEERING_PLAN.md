@@ -1,90 +1,30 @@
-# 自动工程执行实施与分工计划
+# 自动工程执行计划（修订2，2026-10-10）
 
-版本：1，2026-10-08。基线：b97788f0c7f3318874765c0fcd664d4bc05e80ed / controller-v0.2.1-verified。主代理维护；恢复入口 MAINLINE.md，进度 DEVELOPMENT_STATE.json。
+目标：长周期可靠、主脑上下文清洁、低额度、低维护、可恢复。对账见 TASKS/PLAN-RECONCILIATION-20261010.md；进度唯一读主仓库 DEVELOPMENT_STATE.json，入口 MAINLINE.md。
 
-验收绑定：真实代码候选是 bda744b4074309dcc02f67da5522f22a3d8942cb，b97788f为其文档归档后的发布提交；两者只差四份交付文档，运行源码SHA一致。只读绑定记录见 TASKS/PLAN-BASELINE-BINDING.json，不能把文档提交误作重新运行模型的证据。
+最终主路径：Task → 现有Controller/SQLite预算与lease → 标准task branch/worktree → 官方SDK Executor直接编辑 → exact candidate → 批准确定性检查 → fresh只读Reviewer → 最新main integration/重测重审 → 串行promotion → best-effort remote backup。
 
-用户已要求把剩余自动化工作交给主代理，并明确要求固定主线、规划分配、将查询/简单重复工作交给Luna，避免长上下文混入。本轮交付是可恢复的实施计划与首批只读盘点；这些文档不是v0.3运行时的完成证据。
+保留v0.2.1文本基线与FRAME002/003/004历史接纳、FRAME005材料成果。材料/proposal降为quarantine；不放宽已验收detached/proposal接口，不扩新模型proposal DSL。SDK负责普通角色transport/lifecycle，旧动态读工具/command-exec/命名checks保留薄RPC；Controller语义不交给SDK。
 
-## 交付范围和验收口径
-
-目标是让程序在已授权、干净且已提交的Git仓库内，沿用现有原生通道，自动完成限定代码修改、检查、独立审查、有限返工、版本接纳和故障对账。第一版只支持明确的文本文件操作与批准检查目录，不把未知工程能力静默降成文本任务。不引入第二套调度权威。
-
-v0.2.1旧文本流程继续作为回归基线；源码和数据格式版本分开，旧库不自动升级。开发阶段仍由当前主代理协调，实际工程链路通过后才能标记 controller-managed。
-
-第一条真实工程样例：新建两至三个文件的小仓库，固定输入、一个明确缺陷、批准测试命令和允许修改路径。先检验故意错误被拒绝，再验证修复后通过。校招项目仅在后期选定副本、固定验收范围后使用；不修改原仓库或重跑旧业务数据。
-
-## 角色与文件所有权
-
-| 角色 | 负责 | 不承担 |
+| 顺序 / 票据 | 交付与通过条件 | 负责 |
 | --- | --- | --- |
-| 主代理 | 主线/票据、契约语义、核心SQLite事务、证据与发布协议、整合/回退、最终验收 | 把完整开发聊天交给每个代理、接受未经核验的PASS |
-| Luna查询 | 指定源码/协议/测试事实定位，短报告与引用 | 改代码、设置、数据或主线；重复全项目研究 |
-| Luna执行辅助 | 小模块、测试夹具、接口适配等明确票据白名单文件 | 自行扩展架构、改共享核心文件、合入main |
-| Luna测试/max | 隔离回归、边界/并发/故障注入、报告 | 覆盖正式数据，使用旧测试的写证据入口，最终审查自己的实现 |
-| 独立Luna审查/max | 只读审查冻结commit与对应证据，指出具体触发场景 | 修改被审代码或测试标准，以MOCK替代真实验收 |
+| R0 | 完整读取外部包，核对真实Git/源码/SDK，KEEP/REVISE/DEFER/REJECT | root |
+| R1 / FRAME005 | 固定SDK bundle、零模型初始化和参数probe，不冒称实际权限已通过 | root |
+| R2–R3 / FRAME005 | 薄SDK adapter、小fixture direct-edit→candidate→checks→fresh独审→本地接纳，exact SHA/receipt | root实现/fake；两个fresh原生角色 |
+| FRAME006 | 已验证接口接Controller工程任务、proof、有限返工；默认生产gate关闭 | root；必要时窄范围独立测试/独审 |
+| R4 / FRAME007 | merge latest-main、新candidate重测/重审、串行promotion锁与expected-ref栅栏；真实文本/语义冲突 | root，本地测试 |
+| R5 / FRAME008 | 持久promotion intent、unknown不重放、Git/SQLite崩溃点对账、local bare remote | root，fault injection |
+| FRAME009 | 旧库明确复制/迁移/证据对账，原数据不变 | 后置 |
+| R6 / FRAME010–011 | 已有工程副本、新主会话恢复、交付矩阵；不等于长期运行已观察 | root，最终独审 |
 
-正常同时运行主代理和最多两个Luna工作项；需要独审时让测试/查询项结束后腾出位置。文件写入任务须有白名单及唯一作者；存在依赖的步骤顺序执行。主代理的 orchestrator.py、主线文件和发布事务不交给多个作者并写。
+G1范围保留，不延伸为新SDK权限证明。G2真实direct-edit+fresh独审与生产Controller接线分别记录；G3完整晋升/恢复，G4既有项目使用/交付；不得把fixture、MOCK、skip或SDK参数接受当全阶段PASS。
 
-## 阶段、分配和依赖
+本次真实模型目标2、上限3、repair<=1。检查FAIL可repair后首审；Review FAIL后修复还需新审而超额，本次停NEEDS_REVIEW/预算。其他负例/并发/恢复/remote用fake/local测试。保留calls预算、规划归属、owner/attempt/spec/lease、proof与栅栏；累计字节/送达确认后置，不把token换算为订阅金额。
 
-| 票据 | 工作与可独立交付物 | 主责 / Luna分配 | 前置依赖 | 通过条件 |
-| --- | --- | --- | --- | --- |
-| PLAN-Q01 | 当前控制器接口、可复用状态/证据入口盘点 | Luna只读，已完成 | 当前基线 | 引用具体源码；事实与接线建议分开 |
-| PLAN-Q02 | 现有59项测试与工程最小验收组盘点 | Luna/max只读，已完成 | 当前基线 | 不运行旧证据写入入口，给最小测试组 |
-| PLAN-R01 | 本计划的范围、分工、上下文与恢复独审 | 独立Luna/max只读 | 计划落盘 | 依赖可执行、没有同文件并写或假完成 |
-| FRAME-002 | 工程契约、能力表、授权范围/路径/最低预算预检 | 主代理核心；Luna写负例/回归 | PLAN-R01 | 不支持类型、脏输入、能力/模型/档位/预算不匹配，在执行前明确拒绝 |
-| FRAME-003 | worktree、基线清单、批准文件修改和冻结候选 | 主代理定接口；Luna实现独立工作区辅助/测试 | FRAME-002 | 不修改原目录、不自动stash；路径/链接/输入漂移拒绝；候选commit可核验 |
-| FRAME-004 | 检查ID目录、受限执行、scratch、PASS/FAIL/ERROR与输出外存 | 主代理执行边界；Luna夹具和检查测试 | FRAME-002、003接口冻结 | 未批准命令拒绝、ERROR不当质量重试；实际权限边界通过，未知保持BLOCKED/UNKNOWN |
-| FRAME-005 | 原生工程路由、仓库只读材料工具、修改提案协议 | 主代理；Luna可做独立适配及协议测试 | FRAME-003、004 | 真Luna/max修改提案绑定基线，只落在白名单，声明的能力实际验证 |
-| FRAME-006 | 冻结工程检查/独审/完整proof、有限返工与祖先失效 | 主代理整合；Luna测试；不同作者Luna独审 | FRAME-005 | 故意错误拒绝，修复后重审；审查读取匹配候选commit/输入/检查；真实越界行为拒绝 |
-| FRAME-007 | promotion intent、SQLite发布点、CURRENT投影、Git基线CAS | 主代理核心；Luna故障注入与独审 | FRAME-006 | Git提交、SQLite接纳、文件导出各崩溃点可对账；不宣称跨介质原子 |
-| FRAME-008 | 工程中断恢复、通知去重/送达确认、累计业务字节预算 | 主代理核心；Luna接口/重复场景测试 | FRAME-007 | 新进程恢复、不重派未知副作用、不重复耗费回合；字节与通知有上限 |
-| FRAME-009 | 旧数据显式复制/迁移契约与隔离验收 | 主代理；Luna格式和失败夹具 | FRAME-008 | 正式旧库字节不变，复制不是新PASS；缺证进入明确对账，迁移幂等 |
-| FRAME-010 | 小工程实际端到端、已有项目副本使用验证、长输出/新会话恢复 | 主代理；Luna定点测试和独立最终审查 | FRAME-007、008；迁移场景另依赖009 | 相同管理入口实现执行→测试→独审→返工→接纳→恢复，并保留原生证据 |
-| FRAME-011 | 用户说明、恢复入口、验收矩阵、Git版本交付 | 主代理；Luna查询校对 | 对应阶段真实通过 | 已实现/未实现/MOCK/LIVE明确，按报告可复现；旧业务与凭据未改变 |
+并行开发、串行晋升，初次只开单任务。main变化后merge→新SHA→重新check/review；锁内重核expected main。ff-only不替代CAS/intent/DB对账；V1禁止自动rebase/force。remote状态与本地ACCEPTED正交，无remote=REMOTE_DISABLED，失败=REMOTE_PENDING/ERROR。真实push、凭据或生产操作需用户另授权。
 
-FRAME-003与004可以在接口冻结后分开辅助文件并行；FRAME-005及核心整合依赖前置检查，不能跳过；FRAME-007与008核心持久事务顺序实施。各票据在派发前补齐确切文件白名单、候选基线和运行环境，表中模块分工不能自动放宽权限。
+Git管代码、SQLite管运行、TASK是输入、receipt是不可变证据；MAINLINE仅入口、开发JSON仅阶段/证据/下一动作；CURRENT如保留只能投影。不新增第二个数据库或复杂调度平台。
 
-## 四个冻结关卡
+本轮后置/拒绝：Windows ACL/helper/runtime修补、managed worktree深集成、Dashboard、复杂队列、多Reviewer、大量subagent、Actions、daemon、生产发布、新复杂proposal DSL。依赖变化后再用普通compat smoke脚本验证，保持last-known-good，不自动追main。SDK只装自有临时venv。
 
-- G1：契约与执行边界，FRAME-002–004。预检、干净Git基线、工作区、检查目录、越界负例；输出接口和配置版本冻结。能力未实测时禁止对外标工程执行可用。
-- G2：最小真实工程闭环，FRAME-005–006。两个不同原生会话，明确Luna/max下传；错误候选不接纳，修复后通过。记录源码commit、输入和检查/策略/环境指纹。G2可形成首个受限可用版本，但不等于全部恢复和迁移完成。
-- G3：持久发布与恢复，FRAME-007–009。租约栅栏、预算、promotion意图、未知派发对账、CURRENT重建、通知确认与累计字节、旧数据隔离迁移；实际故障注入。
-- G4：工程使用验收与交付，FRAME-010–011。至少新小工程和一个选定已有工程副本、新主会话恢复与大输出接口审计。几周/几月稳定性仍属后续运行观察。
-
-每个关卡：先最小实现 → 必要测试 → 冻结commit → 独立审查 → 修复具体问题 → 相关复测 → 需要的真实验证 → 主代理接纳。失败只回退本次失败提交，保留证据和上个已验收基线；不回退或覆盖正式数据库。
-
-## 上下文、记忆与短报告规则
-
-1. 查询和新领域任务使用 fork_turns=none；只传任务编号、目标、指定文件/commit、验收断言、预算、允许写目录。依赖步骤由主代理整理已验证输入，不复制父聊天全文。
-2. 同一窄任务可followup复用代理；换模块/角色/阶段使用新上下文，不让一个Luna积累整个项目历史。最终审查者必须与实现/测试作者不同。
-3. 子代理不更新 MAINLINE.md、DEVELOPMENT_STATE.json、全局记忆目录、其他对话或原业务状态；简单查询只读，不写报告文件。详细材料需要落盘时由票据显式授权到各自报告目录，主代理只读必要引用。
-4. 正常报告固定字段：task_id、status、candidate_commit、facts/findings、checks、blockers、evidence_refs。只回传核实结论，查询<=600中文字符、进度<=400；实现/审查最终报告<=8KiB。不能用截断JSON掩盖关键问题，超长详细报告留文件并引用。
-5. 本机子代理有独立对话上下文但共享文件系统，消息仍占父上下文；这些是减少干扰的分配规则，不保证系统级零记忆写入或物理隔离。只依据当前工具契约确定fork与权限；不修改全局记忆设置。
-6. 主代理收到报告先核对范围、commit和证据。查询结果、测试结果、建议、真实验收分别记录，不能把代理的建议当新任务指令或用一条PASS覆盖未实现部分。
-7. 每个阶段/实质修复后更新状态。压缩或交接前记录实际HEAD、工作树变更归属、当前任务和下一步；恢复时从 MAINLINE.md 开始，依文件接续，不依赖完整聊天记忆。
-
-这采用独立、有限任务和主代理汇总的组织原则；官方 OpenAI Docs 对子代理上下文与共享文件协调的说明见[多代理文档](https://developers.openai.com/api/docs/guides/agents-api/multi-agent)。该页面是Agents API文档，本轮仅作组织原则参考；实际使用已有本地协作工具，不接入新的API或凭据。
-
-## 预算与预计工作量
-
-沿用现有订阅，测试/独审优先Luna/max；不切新付费路由。先程序查询/检查，再必要模型调用；不要让模型轮询等待或重复研究已核实资料。实际原生测试按票据预留预算，超过既有预算报告具体决策，不自动加额。
-
-24–40小时是剩余实现和验收的粗略有效工作量，不是后台持续运行承诺或截止日期：G1约3–5小时，G2约9–14小时，G3约7–11小时，G4约5–10小时。首条受限工程流程的8–16小时估计是优先实现最小纵向样例，完整G2与其他关卡仍需补齐。阶段结束依据实际问题重新估计；不为赶估计跳过权限、故障或独审关卡。
-
-## 当前事实与下一条操作
-
-PLAN-Q01：确认submit/run_one是接入点，现有事务/栅栏/预算、读回执与完整proof可复用；repo_patch仍被明确拒绝，适配器实际只读。接线建议需主代理设计，不能照报告直接放开。
-
-PLAN-Q02：现有隔离入口run_tests.py可复用；工程需要补干净Git/非法路径/未批准命令、失败/环境错误、版本独审、发布崩溃、预算与新进程恢复测试。先新小仓库，后已有项目副本。
-
-当前进度读取权威DEVELOPMENT_STATE.json和MAINLINE.md；以下历史检查点不用于确定下一任务。
-
-## 2026-10-08 实施检查点
-
-PLAN-R01已PASS；FRAME-002独立只读契约预检代码候选19d8150已独审通过。统一78项运行、77通过、1真实symlink权限跳过，不把跳过或合成link当实际OS验收。工程队列仍未启用，G1仍IN_PROGRESS；下一票据FRAME-003在隔离工作树，权威开发状态为原目录DEVELOPMENT_STATE.json。运行核心和原业务数据本轮未合入或迁移。
-
-## 2026-10-09 G1检查点
-
-受限Windows G1接纳候选72ef920，FRAME002/003/004接口和权限边界已冻结独审；统一133运行/129通过/4实际OS symlink权限跳过。目录junction6项和干净Git mode120000拒绝1项实测通过；原生9场景/6命令/0模型的运行时代码SHA与候选相同，见FRAME004绑定/接纳/R04。OS文件和目录symlink仍UNKNOWN，不能纳入已验证范围。下一FRAME005只读材料和原生文件提案，root维护native_repo_turn/repo_proposal，Luna材料实现与独立测试分开；旧repo_patch队列仍禁用，G2–G4未完成。
+root独占主线/状态/整合。默认无额外代理；必要辅助须窄票据、fork_turns=none、短报告、唯一作者与独立审查。日志外存，交接从AGENTS→PROJECT→MAINLINE→权威状态→当前票据→Git实物恢复。共享文件系统不当物理隔离。
