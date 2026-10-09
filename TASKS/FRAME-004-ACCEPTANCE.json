@@ -1,0 +1,38 @@
+{
+  "schema_version": "native-orchestrator.phase-acceptance/0.3",
+  "task_id": "FRAME-004",
+  "status": "ACCEPTED_RESTRICTED_WINDOWS_CHECKS_ONLY",
+  "accepted_on": "2026-10-09",
+  "candidate_commit": "72ef920013981a5b81d3f414251498cf44e6d174",
+  "gate": "G1_RESTRICTED_WINDOWS_PASS",
+  "supported_scope": [
+    "clean committed Git inputs and guarded detached UTF-8 proposals",
+    "trusted catalog with explicit per-stream cap and fixed Python argv",
+    "named checks MXC profile and observed no-network/scratch-only writes",
+    "real directory junction rejection and Git mode120000 input rejection"
+  ],
+  "unknown_scope": [
+    "real OS file symlink rejection",
+    "real OS directory symlink rejection"
+  ],
+  "full_regression": {
+    "run": 133,
+    "passed": 129,
+    "failed": 0,
+    "errors": 0,
+    "skipped": 4,
+    "evidence": "E:\\零碎\\native-orchestrator-v03\\.runtime\\frame-004-final-frozen-unified-report.json",
+    "sha256": "4d5ccbbae11e81cb8bd392529648145e93961d8196eca7ae922cdad77781f2a7"
+  },
+  "live_native": {
+    "validated_commit": "6db1418935930e8a5131e66ac8b2b38d0fef24a6",
+    "cases": 9,
+    "command_dispatches": 6,
+    "model_turns": 0,
+    "binding": "TASKS/FRAME-004-EVIDENCE-BINDING.json"
+  },
+  "independent_review": "TASKS/FRAME-004-REVIEW-R04.md",
+  "production_repo_queue_enabled": false,
+  "controller_managed_engineering_verified": false,
+  "original_business_or_data_modified": false
+}

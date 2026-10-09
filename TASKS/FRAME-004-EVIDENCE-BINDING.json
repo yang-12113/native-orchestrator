@@ -1,0 +1,27 @@
+{
+  "schema_version": "native-orchestrator.evidence-binding/0.3",
+  "candidate_commit": "72ef920013981a5b81d3f414251498cf44e6d174",
+  "native_validated_commit": "6db1418935930e8a5131e66ac8b2b38d0fef24a6",
+  "native_runtime_unchanged": true,
+  "native_runtime_sha256": {
+    "check_runner.py": "d43b4256d98c089292d914694923918564e65a28cd17ebd292c2d6a6a71b7cd8",
+    "native_check_exec.py": "995875850ba3ae19b1f8d1e04c76f7734a3fbc435c254792d4afdf8be222d1ad",
+    "native_rpc.py": "fee6d95b64f6262937736b244791d82e4ba89d3ef44b0d652dbf0e08a6ed3201",
+    "execution_contract.py": "29d8c3b74ec70133e0169d020310f802b6d1b27c23e74d6c76a2be148fc20e09",
+    "validate_check_runner.py": "82d2e9932cf849f712fccdb3cb56a058bdc3474120a8c666dce2d7401d07a003"
+  },
+  "native_evidence": "E:\\零碎\\native-orchestrator-v03\\.runtime\\frame-004-interop-frozen-native-validation\\report.json",
+  "native_evidence_sha256": "252d14415d30bf593d2da9cc426dd0471c15db1be11b639eadd83ff9bb1be75b",
+  "native_cases": 9,
+  "native_command_dispatches": 6,
+  "native_model_turns": 0,
+  "checked_fixture_commit": "a05f1a76607d8d4599c164854e574021d13c7f9b",
+  "changed_files_since_native_validation": [
+    "TASKS/FRAME-004-INTEROP-TEST-REPORT.md",
+    "TASKS/FRAME-004-REVIEW-R03.md",
+    "TASKS/FRAME-004-WINDOWS-LINK-REPORT.md",
+    "run_tests.py",
+    "test_windows_path_boundaries.py"
+  ],
+  "statement": "Final candidate changes only tests, regression reporter and reports; live native runtime bytes match validated commit. No repeat native execution claimed."
+}

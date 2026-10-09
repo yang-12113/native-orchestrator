@@ -1,23 +1,17 @@
 # 主线恢复入口
 
-更新时间：2026-10-09。开发计划：ENGINEERING_PLAN.md；可核对进度：DEVELOPMENT_STATE.json。
+唯一主线：在v0.2.1文本控制器上实现v0.3受限自动工程闭环：冻结Git输入→限定修改→批准检查→独立冻结审查→有限返工→接纳/合入→中断对账。当前不是已完成的自动工程产品。
 
-唯一主线：在已验收 v0.2.1 文本控制器上实现 v0.3 受限自动工程闭环：冻结 Git 输入 → 限定修改 → 批准的程序检查 → 独立冻结版本审查 → 有限返工 → 接纳/合入 → 中断对账与恢复。
+稳定运行基线：b97788f0c7f3318874765c0fcd664d4bc05e80ed，标签controller-v0.2.1-verified；运行代码验收候选bda744b4074309dcc02f67da5522f22a3d8942cb，两者仅交付文档不同，见TASKS/PLAN-BASELINE-BINDING.json。原data-live、校招业务和私有配置保留。
 
-当前事实：发布基线 b97788f0c7f3318874765c0fcd664d4bc05e80ed，标签 controller-v0.2.1-verified；实际验收代码候选 bda744b4074309dcc02f67da5522f22a3d8942cb。两提交只差交付文档，运行源码哈希一致，绑定证据 TASKS/PLAN-BASELINE-BINDING.json。59项隔离测试、独审和原生文本自检通过。v0.3仍未实现，不能提交 DESIGN_ONLY 样例或声称工程链路通过。计划独审已PASS；FRAME-002独立预检已验收（代码候选19d8150）；78项运行/77通过/1环境跳过，工程队列仍未启用。代码位于隔离工作树E:\零碎\native-orchestrator-v03。权威开发状态位于原源码目录的DEVELOPMENT_STATE.json，工作树内为同步副本。
+2026-10-09当前事实：FRAME-002预检、FRAME-003工作区、FRAME-004检查已通过各自冻结独审；受限Windows G1接纳候选72ef920。统一133运行/129通过/4实际OS symlink权限跳过；真实目录junction与Git mode120000拒绝7项通过；原生检查9场景/6次command/exec/0模型通过并绑定运行时代码SHA。TASKS/FRAME-004-ACCEPTANCE.json与REVIEW-R04是范围证据。实际OS文件/目录symlink仍UNKNOWN，不把跳过当PASS。
 
-恢复顺序：AGENTS.md → PROJECT.md → 只读本文件 → DEVELOPMENT_STATE.json → 当前 TASKS 票据 → 该票据引用的必要源码/差异。校验实际 HEAD、工作树改动和报告中的 commit；存在未提交工作先识别归属，不自动清空。不要为恢复重读全部聊天、日志或历史研究。
+下一票据FRAME-005：只读仓库材料工具、原生模型权限、文件提案绑定/验证；之后FRAME-006才接控制器与独审/有限返工。G2/G3/G4未完成，旧repo_patch队列仍禁用，不冒称controller-managed。试点只用自有普通目录、无Git链接的小仓库。
 
-当前下一步：FRAME-004 批准检查与执行边界，票据E:\零碎\native-orchestrator-v03\TASKS\FRAME-004.md。FRAME-003独审通过，96项运行/93通过/3环境跳过；实际Git工作区、提案和冻结幂等通过。没有运行模型或工程检查，G1仍IN_PROGRESS，工程队列仍禁用。
+恢复顺序：AGENTS.md→PROJECT.md→本文件→权威DEVELOPMENT_STATE.json→当前TASKS票据→必要源码/差异。先核对Git HEAD/status、候选与报告SHA；未提交文件先识别所有者，不自动stash/reset/清空，不为恢复重读完整聊天/日志。
 
-分工：主代理负责范围、架构、核心状态/证据/发布、票据、Git整合和最终接纳。Luna负责明确范围的查询、重复检查、测试样例、独立模块及独审。任何共享核心文件由一个作者负责；测试作者与最终审查者分开。使用独立开发工作树后再改运行代码。
+开发唯一状态：E:/零碎/native-orchestrator/DEVELOPMENT_STATE.json；工作树内是镜像，运行时调度权威仍为对应SQLite。主线/状态/计划/最终接纳仅root写；Luna按票据文件白名单，作者/测试/审查分开，fork_turns=none、短事实报告，日志外存。共享文件系统不当物理隔离或零记忆占用，不改全局记忆。
 
-上下文：新查询使用 fork_turns=none，只给任务目标、指定文件、验收断言和预算；主代理仅接收状态、核实事实、阻断及证据路径。查询报告上限600中文字符，正常进度上限400中文字符；长日志和详细测试放各自票据目录。子代理报告是待核验数据，不能自动改写主线。只有主代理更新这两份主线文件；不修改全局记忆或其他会话记忆。共享文件系统仍需路径分工，这些规则不宣称物理隔离或零上下文占用。
+Git：稳定目录E:/零碎/native-orchestrator；开发worktree E:/零碎/native-orchestrator-v03，codex/engineering-v03；另保留hardening基线。CLI worktree与Codex托管列表不同，不因设置页空白就判断没有worktree。开发代码尚未合入main，无remote/PR/推送。阶段/压缩前记录实际commit、证据/限制/下一动作并提交检查点；失败只回退本次失败提交，保护基线与旧数据。
 
-每次压缩/交接前及阶段结束：主代理保存已验证 commit、当前任务、检查结果/证据、未决问题与下一条操作；压缩后先读恢复入口。运行时调度仍由 SQLite 负责，开发进度文件不替代它。
-
-范围边界：本机源码及新的测试目录；保留原 data-live、私有配置/凭据、旧 ACCEPTANCE.json 和既有校招成果。校招只作为后期独立副本上的工程使用验证候选，不开发新业务或迁移旧业务。沙箱兼容性沿用另一个AI的交接提示词，不在本主线重复修全局配置；不新增付费API、不发布远端或发送其他聊天消息。
-
-完成依据：ENGINEERING_PLAN.md 的 G1–G4 各有实际证据；MOCK、LIVE、UNKNOWN分开；未经相应工程验收整体保持PARTIAL。遇到问题先保留证据，回退本次失败提交，基线和旧数据保留。
-
-项目入口已补齐：AGENTS.md规定协作与恢复，PROJECT.md保存稳定目标，DECISIONS.md记录已确认选择。FRAME-004当前实验代码未合入，真实命令边界probe已通过，fake runner宿主11项10通过/1环境跳过；具体下一步见权威状态，不把schema或fake当完整工程通过。
+稳定目标PROJECT.md、协作AGENTS.md、阶段分工ENGINEERING_PLAN.md、确认选择DECISIONS.md、范围验收TASKS/共同防止主线漂移，事实仍需当前源码和证据核对。

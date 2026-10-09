@@ -11,9 +11,9 @@
   "baseline_code_commit": "b97788f0c7f3318874765c0fcd664d4bc05e80ed",
   "baseline_tag": "controller-v0.2.1-verified",
   "baseline_regression_tests": 59,
-  "current_phase": "FRAME_004_RUNNER_IMPLEMENTATION",
-  "current_task": "FRAME-004",
-  "next_action": "按AGENTS/PROJECT恢复：FRAME-004真实native边界probe已PASS(0模型)，check_runner宿主fake11项10通过1链接跳过；保持严格路径校验，下一步真实native执行runner、完善错误/输出/输入漂移证据，冻结候选与独审。实验代码仍在codex/engineering-v03未合入。",
+  "current_phase": "FRAME_005_READONLY_MATERIAL_IMPLEMENTATION",
+  "current_task": "FRAME-005",
+  "next_action": "FRAME005接口已写TASKS/FRAME-005.md；Luna材料repo_materials与独立测试test_repo_materials落盘/fake验证，root负责原生角色命名权限/提案schema/调度接线设计。下一步核验材料源码和宿主fake测试、冻结独审；未授权票据精确原生模型试点以前不采样。G2–G4未完成，旧工程队列禁用。",
   "code_worktree": "E:\\零碎\\native-orchestrator-v03",
   "code_branch": "codex/engineering-v03",
   "resume_files": [
@@ -21,7 +21,7 @@
     "PROJECT.md",
     "MAINLINE.md",
     "DEVELOPMENT_STATE.json",
-    "E:\\零碎\\native-orchestrator-v03\\TASKS\\FRAME-004.md"
+    "E:\\零碎\\native-orchestrator-v03\\TASKS\\FRAME-005.md"
   ],
   "completed": [
     {
@@ -63,6 +63,12 @@
       "id": "FRAME-004-Q01",
       "status": "READ_ONLY_SCHEMA_CANDIDATE_FOUND",
       "evidence": "E:\\零碎\\native-orchestrator-v03\\TASKS\\FRAME-004-Q01-REPORT.json"
+    },
+    {
+      "id": "FRAME-004",
+      "status": "ACCEPTED_RESTRICTED_WINDOWS_CHECKS_ONLY",
+      "candidate": "72ef920013981a5b81d3f414251498cf44e6d174",
+      "evidence": "E:\\零碎\\native-orchestrator-v03\\TASKS\\FRAME-004-ACCEPTANCE.json"
     }
   ],
   "tasks": [
@@ -99,7 +105,7 @@
     {
       "id": "FRAME-004",
       "owner": "root execution boundary / Luna fixtures",
-      "status": "READY",
+      "status": "ACCEPTED_RESTRICTED_WINDOWS_CHECKS_ONLY",
       "dependencies": [
         "FRAME-002",
         "FRAME-003_INTERFACE"
@@ -109,7 +115,7 @@
     {
       "id": "FRAME-005",
       "owner": "root / Luna adapter helpers",
-      "status": "PLANNED",
+      "status": "INTERFACE_DESIGN",
       "dependencies": [
         "FRAME-003",
         "FRAME-004"
@@ -173,13 +179,29 @@
     }
   ],
   "gates": {
-    "G1": "IN_PROGRESS",
+    "G1": "PASS_RESTRICTED_WINDOWS",
     "G2": "NOT_STARTED",
     "G3": "NOT_STARTED",
     "G4": "NOT_STARTED"
   },
   "pending_decisions": [],
-  "active_delegations": [],
+  "active_delegations": [
+    {
+      "agent": "luna_frame005_materials",
+      "role": "read-only material implementation",
+      "files": [
+        "repo_materials.py"
+      ]
+    },
+    {
+      "agent": "luna_frame005_material_tests",
+      "role": "independent fake-only material tests",
+      "files": [
+        "test_repo_materials.py",
+        "TASKS/FRAME-005-MATERIAL-TEST-REPORT.md"
+      ]
+    }
+  ],
   "context_policy": {
     "new_domain_fork_turns": "none",
     "max_concurrent_luna_workitems": 2,
@@ -217,15 +239,17 @@
   "baseline_binding_evidence": "TASKS/PLAN-BASELINE-BINDING.json",
   "plan_candidate_commit": "13360a9",
   "authoritative_development_state": "E:\\零碎\\native-orchestrator\\DEVELOPMENT_STATE.json",
-  "current_candidate_commit": "be71b86",
+  "current_candidate_commit": "72ef920013981a5b81d3f414251498cf44e6d174",
   "latest_checks": {
-    "tests_run": 96,
-    "passed": 93,
+    "tests_run": 133,
+    "passed": 129,
     "failed": 0,
     "errors": 0,
-    "skipped": 3,
-    "evidence": "E:\\零碎\\native-orchestrator-v03\\.runtime\\frame-003-reviewed-unified-report.json",
-    "native_calls": 0
+    "skipped": 4,
+    "evidence": "E:\\零碎\\native-orchestrator-v03\\.runtime\\frame-004-final-frozen-unified-report.json",
+    "native_model_turns": 0,
+    "candidate_commit": "72ef920013981a5b81d3f414251498cf44e6d174",
+    "source_unchanged": true
   },
   "collaboration_files": {
     "agent_rules": "AGENTS.md",
@@ -246,6 +270,69 @@
       "skipped": 1,
       "evidence": "E:\\零碎\\native-orchestrator-v03\\.runtime\\frame-004-tests\\host-fake-fixed.log"
     },
-    "tool_sandbox_fake_first": "WinError5 strict canonical path under tool environment; host passed without weakening guard"
-  }
+    "tool_sandbox_fake_first": "WinError5 strict canonical path under tool environment; host passed without weakening guard",
+    "native_runner_first": {
+      "status": "FAIL_INCORRECT_CLASSIFICATION_PENDING_FIX",
+      "exit_code": 1,
+      "diagnostic": "MXC launcher: cannot locate required Windows platform directory: HRESULT 0x80070003",
+      "model_turns": 0,
+      "evidence": "E:\\零碎\\native-orchestrator-v03\\.runtime\\frame-004-runner-real\\evidence\\receipt.json"
+    },
+    "reviewed_native_runner": {
+      "status": "NATIVE_CHECK_RUNNER_VERIFIED",
+      "candidate": "cc41455620cea7a44411662eb28f86cd92d8c4d3",
+      "cases": 9,
+      "native_command_dispatches": 6,
+      "model_turns": 0,
+      "evidence": "E:\\零碎\\native-orchestrator-v03\\.runtime\\frame-004-reviewed-native-validation\\report.json"
+    },
+    "reviewed_targeted_tests": {
+      "run": 28,
+      "passed": 27,
+      "skipped": 1,
+      "failed": 0,
+      "errors": 0,
+      "evidence": "E:\\零碎\\native-orchestrator-v03\\.runtime\\frame-004-reviewed-fake-tests.log"
+    },
+    "frozen_full_regression": {
+      "candidate": "132774a0b54f2ad13066521f8447e6881ff6c745",
+      "run": 123,
+      "passed": 119,
+      "skipped": 4,
+      "failed": 0,
+      "errors": 0,
+      "evidence": "E:\\零碎\\native-orchestrator-v03\\.runtime\\frame-004-frozen-unified-report.json"
+    },
+    "independent_review": "MODULE_PASS_G1_INCOMPLETE_CATALOG_FIELD",
+    "catalog_interop": "HOST_FAKE_VERIFIED_WITHOUT_TRANSLATION",
+    "r03_status": "INTEROP_PASS_G1_INCOMPLETE_REAL_LINK_GAPS",
+    "latest_full_regression": {
+      "candidate": "6db1418935930e8a5131e66ac8b2b38d0fef24a6",
+      "run": 126,
+      "passed": 122,
+      "skipped": 4,
+      "failed": 0,
+      "errors": 0,
+      "evidence": "E:\\零碎\\native-orchestrator-v03\\.runtime\\frame-004-interop-frozen-unified-report.json"
+    },
+    "windows_directory_junctions": {
+      "run": 6,
+      "passed": 6,
+      "failed": 0,
+      "errors": 0,
+      "skipped": 0,
+      "scope": "real OS directory junctions; not file symlink equivalence",
+      "evidence": "E:\\零碎\\native-orchestrator-v03\\.runtime\\frame-004-windows-link-host-tests.log"
+    },
+    "r04_status": "PASS_RESTRICTED_WINDOWS; OS_SYMLINK_UNKNOWN",
+    "actual_windows_link_proof": {
+      "run": 7,
+      "passed": 7,
+      "skipped": 0,
+      "evidence": "E:\\零碎\\native-orchestrator-v03\\.runtime\\frame-004-windows-link-and-git-host-tests.log"
+    }
+  },
+  "unverified_boundaries": [
+    "real OS file/directory symlink behavior; legacy tests skipped WinError1314"
+  ]
 }

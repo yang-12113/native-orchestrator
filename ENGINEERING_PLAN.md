@@ -79,8 +79,12 @@ PLAN-Q01：确认submit/run_one是接入点，现有事务/栅栏/预算、读�
 
 PLAN-Q02：现有隔离入口run_tests.py可复用；工程需要补干净Git/非法路径/未批准命令、失败/环境错误、版本独审、发布崩溃、预算与新进程恢复测试。先新小仓库，后已有项目副本。
 
-接下来先完成PLAN-R01，核对阶段依赖、所有权与证据门槛；之后FRAME-002在独立开发工作树中实现工程契约和预检。运行时、原data-live、路由配置与校招业务在本次规划中未改动。
+当前进度读取权威DEVELOPMENT_STATE.json和MAINLINE.md；以下历史检查点不用于确定下一任务。
 
 ## 2026-10-08 实施检查点
 
 PLAN-R01已PASS；FRAME-002独立只读契约预检代码候选19d8150已独审通过。统一78项运行、77通过、1真实symlink权限跳过，不把跳过或合成link当实际OS验收。工程队列仍未启用，G1仍IN_PROGRESS；下一票据FRAME-003在隔离工作树，权威开发状态为原目录DEVELOPMENT_STATE.json。运行核心和原业务数据本轮未合入或迁移。
+
+## 2026-10-09 G1检查点
+
+受限Windows G1接纳候选72ef920，FRAME002/003/004接口和权限边界已冻结独审；统一133运行/129通过/4实际OS symlink权限跳过。目录junction6项和干净Git mode120000拒绝1项实测通过；原生9场景/6命令/0模型的运行时代码SHA与候选相同，见FRAME004绑定/接纳/R04。OS文件和目录symlink仍UNKNOWN，不能纳入已验证范围。下一FRAME005只读材料和原生文件提案，root维护native_repo_turn/repo_proposal，Luna材料实现与独立测试分开；旧repo_patch队列仍禁用，G2–G4未完成。
