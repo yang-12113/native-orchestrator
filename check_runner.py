@@ -174,6 +174,8 @@ def run_check(check_id, catalog, context, *, before_dispatch, native_executor=ex
             raise CheckError("CAPABILITY_UNVERIFIED", "Named native permission provenance required")
         if result.get("native_version") not in VERIFIED_NATIVE_VERSIONS:
             raise CheckError("NATIVE_VERSION_CHANGED", "Unverified native executor version")
+        if result.get("output_complete", True) is not True:
+            raise CheckError("OUTPUT_INCOMPLETE", "Native executor explicitly reported incomplete capture")
         # A capture at its cap may be truncated; it cannot be treated as complete check evidence.
         if any(len(result[name].encode("utf-8")) >= check["output_bytes_cap"] for name in ("stdout", "stderr")):
             raise CheckError("OUTPUT_INCOMPLETE", "Captured output reached its configured cap")

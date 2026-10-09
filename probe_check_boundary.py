@@ -9,6 +9,7 @@ import sys
 import threading
 from pathlib import Path
 from native_rpc import Rpc
+from native_check_exec import _build_environment
 
 ROOT = Path(__file__).resolve().parent
 
@@ -40,10 +41,7 @@ def main():
         json.dumps(str(area / "control")) + ' = "deny"',
         '[permissions.checks.network]', 'enabled = false', ''])
     (area / "home/config.toml").write_text(config, encoding="utf-8", newline="\n")
-    env = {key: value for key, value in os.environ.items()
-           if not key.startswith(("OPENAI_", "AZURE_OPENAI_", "CODEX_"))}
-    env.update(CODEX_HOME=str(area / "home"), PYTHONIOENCODING="utf-8",
-               PYTHONDONTWRITEBYTECODE="1")
+    env = _build_environment(area / "home", scratch)
     listener = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     listener.bind(("127.0.0.1", 0)); listener.listen(4); listener.settimeout(0.5)
     port = listener.getsockname()[1]
@@ -77,7 +75,7 @@ except OSError as error:results['loopback_connected']=False;results['loopback_er
 print(json.dumps(results))
 '''
     command = [sys.executable, "-B", "-c", script, str(area), str(port)]
-    report = {"status": "BLOCKED", "native_calls": 0, "model_turns": 0,
+    report = {"status": "BLOCKED", "native_command_dispatches": 0, "model_turns": 0,
               "global_config_modified": False, "probe_root": str(area),
               "expected_profile": "checks", "host_loopback_baseline": "REACHABLE"}
     try:
@@ -93,6 +91,7 @@ print(json.dumps(results))
                 report["profiles"] = rpc.call("permissionProfile/list", {"limit": 20})
             except Exception as error:
                 report["profile_discovery_error"] = str(error)[:400]
+            report["native_command_dispatches"] += 1
             result = rpc.call("command/exec", {"command": command, "cwd": str(area / "input"),
                              "permissionProfile": "checks", "timeoutMs": 10000, "outputBytesCap": 4096,
                              "env": {"PYTHONDONTWRITEBYTECODE": "1", "PYTHONIOENCODING": "utf-8",

@@ -14,6 +14,7 @@ from pathlib import Path
 from unittest.mock import patch
 
 from check_runner import CheckError, input_manifest, run_check
+from execution_contract import inspect_git_input
 
 ROOT = Path(__file__).resolve().parent
 
@@ -36,6 +37,7 @@ def main():
     report = {"status": "RUNNING", "candidate_commit": candidate, "model_turns": 0,
               "global_config_modified": False, "authentication_copied": False,
               "output_root": str(area), "cases": []}
+    report["runner_candidate_commit"] = inspect_git_input(str(ROOT))["head"]
     code_files = ("check_runner.py", "native_check_exec.py", "native_rpc.py",
                   "execution_contract.py", "validate_check_runner.py")
     code_hashes = {name: hashlib.sha256((ROOT / name).read_bytes()).hexdigest() for name in code_files}

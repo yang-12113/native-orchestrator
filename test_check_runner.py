@@ -487,6 +487,14 @@ class CheckRunnerFixtureTests(unittest.TestCase):
         intent = json.loads((self.fixture.evidence / "intent.json").read_text(encoding="utf-8"))
         self.assertEqual(intent["state"], "NEEDS_RECONCILIATION")
 
+    def test_explicit_incomplete_output_cannot_pass_even_below_the_cap(self) -> None:
+        fake = FakeNativeExecutor()
+        fake.result["output_complete"] = False
+        receipt = self._run(native_executor=fake)
+        self.assertEqual((receipt["status"], receipt["code"]), ("ERROR", "OUTPUT_INCOMPLETE"))
+        self.assertFalse(receipt["output_complete"])
+        self.assertEqual(Path(receipt["stdout_ref"]).read_text(encoding="utf-8"), fake.result["stdout"])
+
     def test_unverified_prior_native_version_and_unsafe_python_flags_are_rejected(self) -> None:
         for argv in ([sys.executable, "-c", "pass"], [sys.executable, "-B", "-I", "-c", "pass"]):
             fixture = self._new_fixture()
