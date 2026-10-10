@@ -11,9 +11,9 @@
   "baseline_code_commit": "b97788f0c7f3318874765c0fcd664d4bc05e80ed",
   "baseline_tag": "controller-v0.2.1-verified",
   "baseline_regression_tests": 59,
-  "current_phase": "FRAME_006_ROUND1_IMPLEMENTING",
+  "current_phase": "FRAME_006_ROUND1_DIFF_RECEIPT_PROTOCOL_FIX",
   "current_task": "FRAME-006",
-  "next_action": "Implement thin existing Controller wiring, policy and exact repo proof; fake/regression then fresh Controller fixture, Luna High Executor + Sol High Reviewer, target2/hard3 SDK turns.",
+  "next_action": "Live SDK turns2 completed at same candidate2a97196117f43ca2d3321dce1aae4f5427903175. Original Controller rejected extra legitimate diff ref as INCOMPLETE_REVIEW. Diff is now explicit fifth receipt. Wait fake tests exec63080, freeze correction and regression; then invoke Controller.reconcile_completed_repo_review for p-7bfc760188f34f35:addition with existing complete logs, no model replay. Never rerun bootstrap.",
   "code_worktree": "E:\\零碎\\native-orchestrator-v03",
   "code_branch": "codex/engineering-v03",
   "resume_files": [
@@ -237,7 +237,7 @@
   "baseline_binding_evidence": "TASKS/PLAN-BASELINE-BINDING.json",
   "plan_candidate_commit": "13360a9",
   "authoritative_development_state": "E:\\零碎\\native-orchestrator\\DEVELOPMENT_STATE.json",
-  "current_candidate_commit": null,
+  "current_candidate_commit": "40d4d5847a5ee71c47254b08442da62b2c522fe4",
   "latest_checks": {
     "candidate_commit": "9e062d607dfc67c6d6d911ce716c06e93c2c612c",
     "tests_run": 157,
@@ -367,9 +367,9 @@
     "current_candidate_commit": "tested/reviewed code candidate; not current checkout HEAD"
   },
   "frame006_round1": {
-    "status": "IMPLEMENTING",
+    "status": "DIFF_REFERENCE_PROTOCOL_FIX",
     "sdk_turn_budget": 3,
-    "sdk_turns_reserved": 0,
+    "sdk_turns_reserved": 2,
     "model_policy": "config/model-policy.toml",
     "fixture": ".runtime/frame006-round1-20261010-a26f",
     "round2_deferred": [
@@ -377,6 +377,14 @@
       "main concurrency/conflicts",
       "serial promotion CAS",
       "remote"
-    ]
+    ],
+    "candidate_code_commit": "40d4d5847a5ee71c47254b08442da62b2c522fe4",
+    "regression": ".runtime/frame006-round1-frozen-regression.json",
+    "bootstrap": ".runtime/frame006-round1-bootstrap-20261010-a26f.py",
+    "exec_session": 59366,
+    "sdk_turns_completed": 2,
+    "live_task_id": "p-7bfc760188f34f35:addition",
+    "live_candidate": "2a97196117f43ca2d3321dce1aae4f5427903175",
+    "fake_test_session": 63080
   }
 }

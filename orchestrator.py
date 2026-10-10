@@ -798,6 +798,36 @@ class Controller:
                     self.db.execute("UPDATE calls SET completed=?,usage=? WHERE id=?",
                         (time.time() if record.get("status") == "completed" else None, encode(usage), call_id))
 
+    def reconcile_completed_repo_review(self, task_id):
+        """Revalidate the known missing-diff-ref protocol bug, never replay a turn."""
+        from repo_execution import finish_review
+        task = self.db.execute("SELECT * FROM tasks WHERE id=?", (task_id,)).fetchone()
+        if task is None or json.loads(task["spec"]).get("task_kind") != "repo_worktree_v03" or task["state"] != "NEEDS_DECISION" or task["error_class"] != "REPO_EXECUTION_ERROR":
+            raise ValueError("COMPLETED_REVIEW_RECONCILIATION_NOT_ELIGIBLE")
+        directory = self.task_dir(task)
+        if json.loads((directory / "error.json").read_bytes()).get("detail") != "INCOMPLETE_REVIEW":
+            raise ValueError("ONLY_KNOWN_DIFF_REFERENCE_PROTOCOL_BUG")
+        record = json.loads((directory / "reviewer-sdk.json").read_bytes())
+        if record["status"] != "completed" or record["thread_id"] != task["reviewer_id"]:
+            raise ValueError("REVIEW_RESULT_NOT_COMPLETED_OR_BOUND")
+        with self.immediate():
+            current = self.db.execute("SELECT * FROM tasks WHERE id=?", (task_id,)).fetchone()
+            if dict(current) != dict(task):
+                raise LeaseLostError("Reconciliation state changed")
+            self.db.execute("UPDATE tasks SET state='REVIEWING',owner=?,lease_until=? WHERE id=?", (self.owner,time.time()+60,task_id))
+            task = self.db.execute("SELECT * FROM tasks WHERE id=?", (task_id,)).fetchone()
+        result = {k:record[k] for k in ("thread_id","model","effort","native_version")}
+        result.update(payload=json.loads(record["final_response"]),log=str(directory/"reviewer-sdk.json"))
+        try:
+            finish_review(self,task,result)
+            with self.immediate():
+                self.db.execute("UPDATE decisions SET resolved=1,resolution=? WHERE task_id=? AND resolved=0", ("completed review/diff reference deterministically revalidated",task_id))
+        except Exception:
+            self.decision(task,"REVIEW_RECONCILIATION_FAILED",owned=True)
+            raise
+        self.export_state(task["project_id"])
+        return self.verify_task_accepted(self.db.execute("SELECT * FROM tasks WHERE id=?", (task_id,)).fetchone())
+
     def run_one(self):
         self.recover()
         self.audit_accepted()

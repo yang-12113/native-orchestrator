@@ -205,18 +205,28 @@ def check_packet(path):
         db.close()
 
 
+def review_bytes(review_root, candidate, base):
+    expected = {name:(review_root/'.controller-review'/name).read_bytes() for name in ('task.json','checks.json')}
+    expected.update({'git:'+f['path']:(review_root/f['path']).read_bytes() for f in candidate['manifest']['files']})
+    expected['git:'+base+'..'+candidate['candidate_commit']] = git(review_root,['diff','--no-ext-diff',base+'..'+candidate['candidate_commit']]).encode('utf-8')
+    return expected
+
+
 def read_receipts(log, expected, candidate):
     from orchestrator import digest
     items = json.loads(Path(log).read_bytes())['items']
     reads = []
     for ref, raw in expected.items():
-        marker = candidate + ':' + ref[4:] if ref.startswith('git:') else '.controller-review/' + ref
+        is_diff = ref.startswith('git:') and '..' in ref
+        marker = ref[4:] if is_diff else candidate + ':' + ref[4:] if ref.startswith('git:') else '.controller-review/' + ref
         found = False
         for item in items:
             command = item.get('command', '')
             if item.get('type') != 'commandExecution' or item.get('exit_code') != 0 or marker not in command:
                 continue
-            if ref.startswith('git:') and 'git show' not in command:
+            if is_diff and ('git diff' not in command or '--stat' in command or '--name-only' in command):
+                continue
+            if ref.startswith('git:') and not is_diff and 'git show' not in command:
                 continue
             if not ref.startswith('git:') and ('Get-Content' not in command or '-Raw' not in command):
                 continue
@@ -337,8 +347,7 @@ def run_task(controller, task):
         review_inputs.mkdir()
         write(controller, task, review_inputs / 'task.json', spec)
         write(controller, task, review_inputs / 'checks.json', checks)
-        expected = {name: (review_inputs/name).read_bytes() for name in ('task.json','checks.json')}
-        expected.update({'git:'+f['path']: (review_root/f['path']).read_bytes() for f in candidate['manifest']['files']})
+        expected = review_bytes(review_root, candidate, spec['base_commit'])
         review_manifest = input_manifest(review_root)
         meta = {'binding':binding,'read_hashes':{k:digest(v) for k,v in expected.items()},'review_root':str(review_root),
                 'review_manifest':review_manifest,'workspace':descriptor}
@@ -358,37 +367,7 @@ def run_task(controller, task):
             'Run each read command SEPARATELY, return its complete unformatted output (no batching or truncation), and inspect actual diff. '
             'Do not read executor logs or modify files. Only explicit PASS with no findings can accept. Exact binding/refs: '
             + encode({'binding':binding,'refs':list(expected),'read_commands':commands}),review_root,schema)
-        validate_review(reviewer['payload'],binding,list(expected))
-        reads = read_receipts(reviewer['log'],expected,candidate['candidate_commit'])
-        if reviewer['thread_id'] == worker['thread_id'] or input_manifest(review_root) != review_manifest or snapshot(workspace,spec['base_commit']) != candidate or git(review_root,['rev-parse','HEAD']) != candidate['candidate_commit']:
-            raise ValueError('NONINDEPENDENT_OR_CHANGED_REVIEW_INPUT')
-        write(controller,task,directory/'review-read-receipts.json',reads)
-        write(controller,task,directory/'review.json',reviewer['payload'])
-        with controller.immediate():
-            owned(controller,task)
-            controller.db.execute('UPDATE tasks SET review_ref=? WHERE id=?',(str(directory/'review.json'),task['id']))
-        if reviewer['payload']['verdict'] != 'PASS':
-            raise RuntimeError('NEEDS_REVIEW: new repair candidate requires a new independent review')
-        names=['spec.json','workspace.json','candidate.json','checks.json','review-input.json','review-read-receipts.json','review.json','executor-sdk.json','reviewer-sdk.json']
-        check_files = {}
-        if controller.repo_check is approved_check:
-            for check_id, result in zip(spec['checks'], checks['results']):
-                root = controller.data/'check-evidence'/task['project_id']/task['local_id']/str(task['attempt'])/check_id
-                if Path(result['evidence_ref']).resolve() != (root/'receipt.json').resolve() or json.loads((root/'receipt.json').read_bytes()) != result:
-                    raise ValueError('NATIVE_CHECK_RECEIPT_CHANGED')
-                for name in ('receipt.json','intent.json','input-manifest.json','stdout.txt','stderr.txt'):
-                    check_files[check_id+'/'+name] = digest((root/name).read_bytes())
-        proof={'policy':proof_policy(),'binding':binding,'files':{name:digest((directory/name).read_bytes()) for name in names},
-            'check_files': check_files,
-            'workspace':descriptor,'executor_session_id':worker['thread_id'],'reviewer_session_id':reviewer['thread_id'],
-            'reviewer_model':reviewer['model'],'reviewer_effort':reviewer['effort'],
-            'evidence_status':'LIVE_VERIFIED' if worker.get('native_version') and reviewer.get('native_version') and controller.repo_check is approved_check else 'MOCK_VERIFIED'}
-        write(controller,task,directory/'acceptance.json',proof)
-        with controller.immediate():
-            owned(controller,task)
-            controller.db.execute("UPDATE tasks SET state='ACCEPTED',owner=NULL,lease_until=NULL,error_class=NULL,acceptance_proof=?,acceptance_proof_hash=? WHERE id=?",(encode(proof),digest(proof),task['id']))
-            verify_accepted(controller,controller.db.execute('SELECT * FROM tasks WHERE id=?',(task['id'],)).fetchone())
-            controller.event(task['project_id'],task['id'],'ACCEPTED_'+str(task['attempt']))
+        finish_review(controller, task, reviewer)
     except LeaseLostError as error:
         from orchestrator import atomic_json
         atomic_json(directory/'error.json',{'class':'STALE_RUN_DISCARDED','detail':str(error)[:500]})
@@ -404,6 +383,59 @@ def run_task(controller, task):
         controller.export_state(task['project_id'])
     return True
 
+
+def finish_review(controller, task, reviewer):
+    from orchestrator import digest, encode
+    directory = controller.task_dir(task)
+    spec = json.loads(task['spec'])
+    candidate = json.loads((directory/'candidate.json').read_bytes())
+    descriptor = json.loads((directory/'workspace.json').read_bytes())
+    workspace = Path(descriptor['path'])
+    meta = json.loads((directory/'review-input.json').read_bytes())
+    binding, review_manifest = meta['binding'], meta['review_manifest']
+    review_root = Path(meta['review_root'])
+    checks = json.loads((directory/'checks.json').read_bytes())
+    worker = json.loads((directory/'executor-sdk.json').read_bytes())
+    expected = review_bytes(review_root, candidate, spec['base_commit'])
+    hashes = {k:digest(v) for k,v in expected.items()}
+    diff_ref = 'git:'+spec['base_commit']+'..'+candidate['candidate_commit']
+    if meta['read_hashes'] != hashes:
+        if meta['read_hashes'] != {k:v for k,v in hashes.items() if k!=diff_ref}:
+            raise ValueError('REVIEW_INPUT_BINDING_CHANGED')
+        write(controller,task,directory/'review-input-before-diff-ref.json',meta)
+        meta['read_hashes']=hashes
+        write(controller,task,directory/'review-input.json',meta)
+    validate_review(reviewer['payload'],binding,list(expected))
+    reads = read_receipts(reviewer['log'],expected,candidate['candidate_commit'])
+    if reviewer['thread_id'] == worker['thread_id'] or input_manifest(review_root) != review_manifest or snapshot(workspace,spec['base_commit']) != candidate or git(review_root,['rev-parse','HEAD']) != candidate['candidate_commit']:
+        raise ValueError('NONINDEPENDENT_OR_CHANGED_REVIEW_INPUT')
+    write(controller,task,directory/'review-read-receipts.json',reads)
+    write(controller,task,directory/'review.json',reviewer['payload'])
+    with controller.immediate():
+        owned(controller,task)
+        controller.db.execute('UPDATE tasks SET review_ref=? WHERE id=?',(str(directory/'review.json'),task['id']))
+    if reviewer['payload']['verdict'] != 'PASS':
+        raise RuntimeError('NEEDS_REVIEW: new repair candidate requires a new independent review')
+    names=['spec.json','workspace.json','candidate.json','checks.json','review-input.json','review-read-receipts.json','review.json','executor-sdk.json','reviewer-sdk.json']
+    check_files = {}
+    if controller.repo_check is approved_check:
+        for check_id, result in zip(spec['checks'], checks['results']):
+            root = controller.data/'check-evidence'/task['project_id']/task['local_id']/str(task['attempt'])/check_id
+            if Path(result['evidence_ref']).resolve() != (root/'receipt.json').resolve() or json.loads((root/'receipt.json').read_bytes()) != result:
+                raise ValueError('NATIVE_CHECK_RECEIPT_CHANGED')
+            for name in ('receipt.json','intent.json','input-manifest.json','stdout.txt','stderr.txt'):
+                check_files[check_id+'/'+name] = digest((root/name).read_bytes())
+    proof={'policy':proof_policy(),'binding':binding,'files':{name:digest((directory/name).read_bytes()) for name in names},
+        'check_files': check_files,
+        'workspace':descriptor,'executor_session_id':worker['thread_id'],'reviewer_session_id':reviewer['thread_id'],
+        'reviewer_model':reviewer['model'],'reviewer_effort':reviewer['effort'],
+        'evidence_status':'LIVE_VERIFIED' if worker.get('native_version') and reviewer.get('native_version') and controller.repo_check is approved_check else 'MOCK_VERIFIED'}
+    write(controller,task,directory/'acceptance.json',proof)
+    with controller.immediate():
+        owned(controller,task)
+        controller.db.execute("UPDATE tasks SET state='ACCEPTED',owner=NULL,lease_until=NULL,error_class=NULL,acceptance_proof=?,acceptance_proof_hash=? WHERE id=?",(encode(proof),digest(proof),task['id']))
+        verify_accepted(controller,controller.db.execute('SELECT * FROM tasks WHERE id=?',(task['id'],)).fetchone())
+        controller.event(task['project_id'],task['id'],'ACCEPTED_'+str(task['attempt']))
 
 def verify_accepted(controller, task, with_evidence=False):
     from orchestrator import digest, EvidenceChangedError
@@ -460,10 +492,9 @@ def verify_accepted(controller, task, with_evidence=False):
             raise ValueError('REPO_REVIEW_NOT_PASS')
         if {x['ref']:x['sha256'] for x in evidence['review-read-receipts.json']}!=meta['read_hashes']:
             raise ValueError('REPO_READ_RECEIPTS_CHANGED')
-        expected={name:(Path(meta['review_root'])/'.controller-review'/name).read_bytes() for name in ('task.json','checks.json')}
+        expected=review_bytes(Path(meta['review_root']), candidate, spec['base_commit'])
         if json.loads(expected['task.json']) != spec or json.loads(expected['checks.json']) != checks:
             raise ValueError('REPO_REVIEW_READ_DIFFERENT_CHECKS_OR_SPEC')
-        expected.update({'git:'+f['path']:(path/f['path']).read_bytes() for f in candidate['manifest']['files']})
         if {k:digest(v) for k,v in expected.items()}!=meta['read_hashes'] or read_receipts(directory/'reviewer-sdk.json',expected,candidate['candidate_commit'])!=evidence['review-read-receipts.json']:
             raise ValueError('REPO_ACTUAL_READS_CHANGED')
         route=spec['controller_model_policy']['routes']['reviewer']

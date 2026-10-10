@@ -48,7 +48,10 @@ class FakeSdk:
                 ref='git:'+path.name
                 items.append({'type':'commandExecution','command':'git show '+payload['candidate_commit']+':'+path.name,'exit_code':0,'aggregated_output':path.read_text(encoding='utf-8')})
                 payload['checked_evidence_refs'].append(ref)
-            items.append({'type':'commandExecution','command':'git diff '+payload['base_commit']+'..'+payload['candidate_commit'],'exit_code':0,'aggregated_output':'synthetic diff'})
+            diff_ref='git:'+payload['base_commit']+'..'+payload['candidate_commit']
+            payload['checked_evidence_refs'].append(diff_ref)
+            diff=git(cwd,['diff','--no-ext-diff',payload['base_commit']+'..'+payload['candidate_commit']])
+            items.append({'type':'commandExecution','command':'git diff '+payload['base_commit']+'..'+payload['candidate_commit'],'exit_code':0,'aggregated_output':diff})
         record={'status':'completed','sdk_version':'fake','native_version':None,'role':role,'model':model,'effort':effort,
             'thread_id':sid,'turn_id':'turn-'+sid,'duration_ms':7,'activity_counts':{'commandExecution':len(items)},
             'usage':{'total':{'input_tokens':10,'cached_input_tokens':8,'output_tokens':2,'total_tokens':12}},
@@ -212,6 +215,28 @@ class RepoControllerTests(unittest.TestCase):
         self.assertEqual(self.task()['error_class'],'BLOCKED_ENVIRONMENT')
         self.assertEqual(self.task()['state'],'NEEDS_DECISION')
         self.assertEqual(self.sdk.roles,[])
+
+    def test_completed_review_diff_reference_bug_reconciles_without_model_replay(self):
+        self.submit();self.c.run_one();t=self.task();path=self.c.task_dir(t)
+        candidate=json.loads(t['acceptance_proof'])['binding']['candidate_commit']
+        meta=json.loads((path/'review-input.json').read_bytes())
+        meta['read_hashes'].pop('git:'+self.base+'..'+candidate)
+        atomic_json(path/'review-input.json',meta)
+        atomic_json(path/'error.json',{'class':'REPO_EXECUTION_ERROR','detail':'INCOMPLETE_REVIEW'})
+        with self.c.immediate():
+            self.c.db.execute("UPDATE tasks SET state='NEEDS_DECISION',error_class='REPO_EXECUTION_ERROR',owner=NULL,lease_until=NULL,acceptance_proof=NULL,acceptance_proof_hash=NULL")
+        proof=self.c.reconcile_completed_repo_review(t['id'])
+        self.assertEqual(self.task()['state'],'ACCEPTED')
+        self.assertEqual(proof['binding']['candidate_commit'],candidate)
+        self.assertEqual(len(self.sdk.roles),2)
+        self.assertEqual(self.c.db.execute('SELECT COUNT(*) FROM calls').fetchone()[0],2)
+        self.assertEqual(len(json.loads((path/'review-read-receipts.json').read_bytes())),5)
+
+    def test_completed_review_reconciliation_never_overrides_reviewer_fail(self):
+        self.sdk.verdict='FAIL';self.submit();self.c.run_one()
+        with self.assertRaises(ValueError):self.c.reconcile_completed_repo_review(self.task()['id'])
+        self.assertEqual(self.task()['error_class'],'NEEDS_REVIEW')
+        self.assertNotEqual(self.task()['state'],'ACCEPTED')
 
 
 if __name__=='__main__':unittest.main()
