@@ -11,9 +11,9 @@
   "baseline_code_commit": "b97788f0c7f3318874765c0fcd664d4bc05e80ed",
   "baseline_tag": "controller-v0.2.1-verified",
   "baseline_regression_tests": 59,
-  "current_phase": "FRAME_006_ROUND1_ACCEPTED_WITH_LIMITS",
+  "current_phase": "FRAME_006_ROUND2_ACCEPTED",
   "current_task": "FRAME-006",
-  "next_action": "Round1 complete. Round2 ticket should cover crash reconciliation/main changes/text and semantic conflicts/serial promotion CAS using fake/local tests. Do not replay completed live fixture or enlarge this round; no push/global/credential/system changes.",
+  "next_action": "Round2 ACCEPTED using fake SDK/real local Git/SQLite/fault injection; 29 new tests, 211 total, 206 PASS/0 FAIL/0 ERROR/5 existing SKIP, real turns 0. Prepare final Round3 ticket for final real engineering validation/read-only boundary and existing runtime proof compatibility; no replay of prior live fixtures, no remote/system changes.",
   "code_worktree": "E:\\零碎\\native-orchestrator-v03",
   "code_branch": "codex/engineering-v03",
   "resume_files": [
@@ -21,7 +21,8 @@
     "PROJECT.md",
     "MAINLINE.md",
     "DEVELOPMENT_STATE.json",
-    "TASKS/FRAME-006.md"
+    "TASKS/FRAME-006-ROUND2.md",
+    "TASKS/FRAME-006-ROUND2-ACCEPTANCE.json"
   ],
   "completed": [
     {
@@ -87,6 +88,12 @@
       "status": "ACCEPTED_WITH_LIMITS",
       "candidate": "757932f40bbd3172601a5030e33d2a22fe170611",
       "evidence": "TASKS/FRAME-006-ROUND1-ACCEPTANCE.json"
+    },
+    {
+      "id": "FRAME-006-ROUND2",
+      "status": "ACCEPTED",
+      "candidate": "26df688545b3811cef293fa9950281f8ec0124a6",
+      "evidence": "TASKS/FRAME-006-ROUND2-ACCEPTANCE.json"
     }
   ],
   "tasks": [
@@ -143,11 +150,11 @@
     {
       "id": "FRAME-006",
       "owner": "root integration; fresh Sol High native quality review",
-      "status": "ROUND1_ACCEPTED_WITH_LIMITS_ROUND2_PENDING",
+      "status": "ROUND2_ACCEPTED_ROUND3_PENDING",
       "dependencies": [
         "FRAME-005"
       ],
-      "ticket": "TASKS/FRAME-006.md"
+      "ticket": "TASKS/FRAME-006-ROUND2.md"
     },
     {
       "id": "FRAME-007",
@@ -200,7 +207,7 @@
   ],
   "gates": {
     "G1": "PASS_RESTRICTED_WINDOWS",
-    "G2": "CONTROLLER_ROUND1_LOCAL_ACCEPTED_WITH_LIMITS",
+    "G2": "CONTROLLER_ROUND2_LOCAL_RECOVERY_PROMOTION_ACCEPTED_FINAL_ROUND3_PENDING",
     "G3": "NOT_STARTED",
     "G4": "NOT_STARTED"
   },
@@ -243,16 +250,16 @@
   "baseline_binding_evidence": "TASKS/PLAN-BASELINE-BINDING.json",
   "plan_candidate_commit": "13360a9",
   "authoritative_development_state": "E:\\零碎\\native-orchestrator\\DEVELOPMENT_STATE.json",
-  "current_candidate_commit": "757932f40bbd3172601a5030e33d2a22fe170611",
+  "current_candidate_commit": "26df688545b3811cef293fa9950281f8ec0124a6",
   "latest_checks": {
-    "candidate_commit": "757932f40bbd3172601a5030e33d2a22fe170611",
-    "tests_run": 182,
-    "passed": 177,
+    "candidate_commit": "26df688545b3811cef293fa9950281f8ec0124a6",
+    "tests_run": 211,
+    "passed": 206,
     "failed": 0,
     "errors": 0,
     "skipped": 5,
-    "native_model_turns": 2,
-    "evidence": "TASKS/FRAME-006-ROUND1-EVIDENCE-BINDING.json",
+    "native_model_turns": 0,
+    "evidence": "TASKS/FRAME-006-ROUND2-EVIDENCE-BINDING.json",
     "source_unchanged": true
   },
   "collaboration_files": {
@@ -405,5 +412,21 @@
     "protocol_fix_reconciled_without_replay": true
   },
   "v03_local_controller_route_implemented": true,
-  "development_runtime_scope": "v0.3 round1 local engineering path in development worktree; full v0.3 promotion/recovery not complete"
+  "development_runtime_scope": "v0.3 local Controller with Round2 receipt reconciliation and journaled serial promotion/CAS verified in development branch; final real engineering/permission boundaries remain Round3",
+  "frame006_round2": {
+    "status": "ACCEPTED",
+    "startup_development_head": "c64b7ce02e551ac3ca9f565be74f6be7b32086d7",
+    "candidate_code_commit": "26df688545b3811cef293fa9950281f8ec0124a6",
+    "fresh_persistent_recovery": true,
+    "model_turns": 0,
+    "new_tests": 29,
+    "acceptance": "TASKS/FRAME-006-ROUND2-ACCEPTANCE.json",
+    "regression": ".runtime/frame006-round2-working-regression.json",
+    "evidence_binding": "TASKS/FRAME-006-ROUND2-EVIDENCE-BINDING.json",
+    "round3_remaining": [
+      "Final real engineering end-to-end validation of the integrated Controller path under separately specified model budget",
+      "Actual adversarial Reviewer write-denial and OS symlink boundary verification; current skipped cases must not become PASS by declaration",
+      "Explicit compatibility/reconciliation validation for previously accepted runtime data after proof-policy/code upgrade; original data-live remains untouched"
+    ]
+  }
 }

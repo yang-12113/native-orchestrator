@@ -1,0 +1,48 @@
+{
+  "schema_version": "native-orchestrator.round-acceptance/0.3",
+  "task_id": "FRAME-006-ROUND-2",
+  "status": "ACCEPTED",
+  "accepted_on": "2026-10-10",
+  "candidate_code_commit": "26df688545b3811cef293fa9950281f8ec0124a6",
+  "current_development_head_resolution": "git rev-parse HEAD; later documentation checkpoints do not change tested source",
+  "initial_checkpoint": "c64b7ce02e551ac3ca9f565be74f6be7b32086d7",
+  "branch": "codex/engineering-v03",
+  "fresh_conversation_restored_from_git_and_persistent_files": true,
+  "round1_status": "ACCEPTED_WITH_LIMITS",
+  "new_tests": 29,
+  "regression": {
+    "run": 211,
+    "passed": 206,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 5,
+    "skip_reason": "Existing Windows OS symlink creation privilege unavailable (WinError1314); no new skip."
+  },
+  "crash_recovery": {
+    "A": "PASS: uncommitted edits preserved; NEEDS_DECISION/NEEDS_RECONCILIATION; no Executor replay",
+    "B": "PASS: parent/tree freeze intent or existing candidate receipt verified; checks re-run",
+    "C": "PASS: exact-candidate PASS reused; first fresh Reviewer only; interrupted checks get new scratch generation",
+    "D": "PASS: bound completed Reviewer log and dispatch/ledger finalized without replay, including incomplete call ledger",
+    "E": "PASS: exact disk acceptance revalidated before DB finalization; tampered proof safely rejected"
+  },
+  "main_change": "PASS: expected A versus actual C rejects B1; merge C produces B2 in new attempt; B2 checks and review repeated before promotion",
+  "text_conflict": "PASS: unmerged Git index retained; both task branches/worktrees preserved; NEEDS_DECISION/GIT_TEXT_CONFLICT; no guessing/reset",
+  "semantic_conflict": "PASS: separate module signature/return convention changes merge cleanly; actual Python deterministic check fails; CODE_CHECK_FAILED; no Reviewer/promotion",
+  "candidate_proof_invalidation": "PASS: new attempt clears active checks/review/proof; old attempt receipts retained; direct Git candidate drift rejects accepted proof",
+  "promotion_CAS": "PASS: common-Git-directory OS lock, expected-main reread and actual atomic Git update-ref CAS; two ready tasks; ff-only-insufficient case; crash after CAS and after receipt; repeated promotion restores DB event without repeating CAS",
+  "budget_exhaustion": "PASS: zero-start and zero-remaining budget do not invoke SDK; candidate/checks preserved; new candidate cannot reuse prior Review PASS",
+  "environment_code_failure_separation": "PASS: ERROR/ImportError/sandbox failures remain BLOCKED_ENVIRONMENT; deterministic integration failure is CODE_CHECK_FAILED; Git conflict distinct",
+  "interruption_no_blind_reexecution": "PASS: unknown Reviewer dispatch, changed worktree/stale checks, live owner, uncommitted result all fail closed without replay",
+  "real_sdk_model_turns": 0,
+  "model_policy": "config/model-policy.toml",
+  "model_policy_sha256": "8749350fc3865e3808b497850f8a2947a804577274eb988ac0844b28a5dc5ea6",
+  "evidence_status": "MOCK_VERIFIED_WITH_REAL_LOCAL_GIT_SQLITE_AND_DETERMINISTIC_PYTHON_CHECKS",
+  "evidence_binding": "TASKS/FRAME-006-ROUND2-EVIDENCE-BINDING.json",
+  "no_remote_credential_system_sandbox_changes": true,
+  "scope": "Round2 local single-machine recovery/concurrency/conflict/promotion acceptance in development branch; no production deployment or new LIVE SDK validation",
+  "round3_remaining": [
+    "Final real engineering end-to-end validation of the integrated Controller path under separately specified model budget",
+    "Actual adversarial Reviewer write-denial and OS symlink boundary verification; current skipped cases must not become PASS by declaration",
+    "Explicit compatibility/reconciliation validation for previously accepted runtime data after proof-policy/code upgrade; original data-live remains untouched"
+  ]
+}
