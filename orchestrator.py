@@ -399,12 +399,23 @@ class Controller:
 
     def recover(self):
         # A live owner is never stolen. Ambiguous dispatches are NEVER silently replayed.
-        with self.immediate():
-            expired = self.db.execute("SELECT * FROM tasks WHERE state IN ('EXECUTING','REVIEWING') AND lease_until<?",
-                                      (time.time(),)).fetchall()
-            for task in expired:
+        expired = self.db.execute("SELECT * FROM tasks WHERE state IN ('EXECUTING','REVIEWING') AND lease_until<?",
+                                  (time.time(),)).fetchall()
+        for task in expired:
+            if json.loads(task['spec']).get('task_kind') == 'repo_worktree_v03':
+                from repo_execution import reconcile_task
+                reconcile_task(self, task)
+            else:
                 self.decision(task, "INTERRUPTED_REQUIRES_RECONCILIATION")
         return len(expired)
+
+    def integrate_repo_main(self, task_id):
+        from repo_promotion import integrate_main
+        return integrate_main(self, task_id)
+
+    def promote_repo_task(self, task_id):
+        from repo_promotion import promote
+        return promote(self, task_id)
 
     def claim(self):
         self.db.execute("BEGIN IMMEDIATE")
@@ -762,6 +773,11 @@ class Controller:
         directory = self.task_dir(task)
         log = directory / (role + "-sdk.json")
         call_id = None
+        with self.immediate():
+            owned(self, task)
+            used = self.db.execute("SELECT COUNT(*) FROM calls WHERE task_id LIKE ?", (task['project_id'] + ':%',)).fetchone()[0]
+            if used >= min(spec['controller_limits']['turns'], self.config.get('max_project_turns', 60)):
+                raise RuntimeError('NEEDS_REVIEW_BUDGET')
 
         def reserve(thread_id):
             nonlocal call_id

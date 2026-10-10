@@ -1,4 +1,4 @@
-"""Controller's small direct-worktree path. Local acceptance, no promotion."""
+"""Controller's bounded direct-worktree execution and receipt reconciliation."""
 import inspect
 import json
 import os
@@ -8,6 +8,7 @@ import subprocess
 import sys
 import threading
 import time
+import uuid
 from pathlib import Path
 
 from check_runner import input_manifest, root_path, run_check
@@ -157,6 +158,8 @@ def freeze(controller, task, spec, workspace, descriptor):
     for entry in input_manifest(workspace)['files']:
         (workspace / entry['path']).read_bytes().decode('utf-8', 'strict')
     git(workspace, ['add', '--', *spec['allowed_changes']], lambda: owned(controller, task))
+    write(controller, task, controller.task_dir(task)/'freeze-intent.json',
+          {'parent': descriptor['start_commit'], 'tree': git(workspace, ['write-tree'])})
     git(workspace, ['-c', 'user.name=Native Orchestrator', '-c', 'user.email=controller@example.invalid',
         'commit', '--no-verify', '--no-gpg-sign', '-m', 'Task ' + task['id'] + ' attempt ' + str(task['attempt'])], lambda: owned(controller, task))
     result = snapshot(workspace, spec['base_commit'])
@@ -264,6 +267,7 @@ def proof_policy():
     return {'kind': 'repo-worktree-proof/1', 'module_sha256': digest(Path(__file__).read_bytes()),
         'sdk_adapter_sha256': digest((ROOT / 'codex_sdk_adapter.py').read_bytes()),
         'model_policy_reader_sha256': digest((ROOT / 'model_policy.py').read_bytes()),
+        'promotion_sha256': digest((ROOT / 'repo_promotion.py').read_bytes()),
         'controller_wiring_sha256': digest((inspect.getsource(Controller.invoke_repo_sdk) + inspect.getsource(Controller.verify_task_accepted)).encode())}
 
 
@@ -297,84 +301,14 @@ def run_task(controller, task):
             raise ValueError('INVALID_EXECUTOR_RESPONSE')
         candidate = freeze(controller, task, spec, workspace, descriptor)
         write(controller, task, directory / 'candidate.json', candidate)
-        binding = {'task_id': task['id'], 'spec_version': task['spec_version'], 'attempt': task['attempt'],
-            'spec_sha256': digest(spec), 'base_commit': spec['base_commit'], **{k:candidate[k] for k in
-            ('candidate_commit','candidate_tree_hash','manifest_hash','changed_paths_hash')},
-            'model_policy_sha256': spec['controller_model_policy']['sha256'],
-            'check_catalog_hash': digest(spec['controller_check_catalog'])}
-        checks = {'binding': dict(binding), 'status': 'PASS', 'results': []}
-        for check_id in spec['checks']:
-            scratch = controller.data / 'scratch' / task['project_id'] / task['local_id'] / str(task['attempt']) / check_id
-            owned(controller, task)
-            scratch.mkdir(parents=True, exist_ok=False)
-            context = {'binding': {'project_id': task['project_id'], 'task_id': task['local_id'], 'spec_version': task['spec_version'],
-                'attempt': task['attempt'], 'contract_hash': digest(spec)}, 'candidate_commit': candidate['candidate_commit'],
-                'snapshot_root': str(workspace), 'scratch_root': str(scratch), 'control_root': str(controller.data / 'projects'),
-                'evidence_root': str(controller.data / 'check-evidence' / task['project_id'] / task['local_id'] / str(task['attempt']) / check_id)}
-            result = controller.repo_check(controller, task, check_id, spec['controller_check_catalog'], context)
-            if result.get('candidate_commit') != candidate['candidate_commit'] or result.get('input_hash') != candidate['manifest_hash'] or result.get('input_unchanged') is not True:
-                raise ValueError('CHECK_CANDIDATE_BINDING_MISMATCH')
-            checks['results'].append(result)
-            if result['status'] != 'PASS':
-                checks['status'] = result['status']
-                break
-        if snapshot(workspace, spec['base_commit']) != candidate:
-            raise ValueError('CHECK_INPUT_DRIFT')
-        write(controller, task, directory / 'checks.json', checks)
-        with controller.immediate():
-            owned(controller, task)
-            controller.db.execute('UPDATE tasks SET manifest_hash=?,check_ref=? WHERE id=?', (candidate['manifest_hash'], str(directory/'checks.json'), task['id']))
-        if checks['status'] == 'ERROR':
-            raise RuntimeError('BLOCKED_ENVIRONMENT: approved check error')
-        if checks['status'] != 'PASS':
-            with controller.immediate():
-                owned(controller, task)
-                if task['attempt'] <= spec['controller_limits']['repairs']:
-                    controller.db.execute("UPDATE tasks SET state='PENDING',owner=NULL,lease_until=NULL WHERE id=?", (task['id'],))
-                    controller.event(task['project_id'], task['id'], 'REWORK_' + str(task['attempt']))
-                else:
-                    controller.decision(task, 'QUALITY_RETRY_LIMIT', owned=True)
-            return True
-        binding['check_receipt_hash'] = digest(checks)
-        review_root = controller.data / 'review-worktrees' / task['project_id'] / task['local_id'] / str(task['attempt'])
-        owned(controller, task)
-        review_root.parent.mkdir(parents=True, exist_ok=True)
-        git(spec['repo_root'], ['worktree','add','--detach',str(review_root),candidate['candidate_commit']], lambda: owned(controller,task))
-        if snapshot(review_root, spec['base_commit']) != candidate:
-            raise ValueError('REVIEW_CHECKOUT_MISMATCH')
-        review_inputs = review_root / '.controller-review'
-        owned(controller, task)
-        review_inputs.mkdir()
-        write(controller, task, review_inputs / 'task.json', spec)
-        write(controller, task, review_inputs / 'checks.json', checks)
-        expected = review_bytes(review_root, candidate, spec['base_commit'])
-        review_manifest = input_manifest(review_root)
-        meta = {'binding':binding,'read_hashes':{k:digest(v) for k,v in expected.items()},'review_root':str(review_root),
-                'review_manifest':review_manifest,'workspace':descriptor}
-        write(controller, task, directory/'review-input.json', meta)
-        fields = {k:{'type':'integer' if type(v) is int else 'string','enum':[v]} for k,v in binding.items()}
-        fields.update(verdict={'type':'string','enum':['PASS','FAIL','BLOCKED']}, findings={'type':'array','items':{'type':'string'},'maxItems':5},
-                      checked_evidence_refs={'type':'array','items':{'type':'string'}},summary={'type':'string','maxLength':400})
-        schema = {'type':'object','properties':fields,'required':list(fields),'additionalProperties':False}
-        with controller.immediate():
-            owned(controller, task)
-            controller.db.execute("UPDATE tasks SET state='REVIEWING' WHERE id=?", (task['id'],))
-        commands = [f'Get-Content -Raw -LiteralPath .controller-review/{name}' for name in ('task.json','checks.json')]
-        commands += [f'git show {candidate["candidate_commit"]}:{f["path"]}' for f in candidate['manifest']['files']]
-        commands += [f'git diff --no-ext-diff {spec["base_commit"]}..{candidate["candidate_commit"]}']
-        reviewer = controller.invoke_repo_sdk(task,'reviewer',
-            'Fresh independent read-only review. TASK/criteria and actual program results are in the two .controller-review files. '
-            'Run each read command SEPARATELY, return its complete unformatted output (no batching or truncation), and inspect actual diff. '
-            'Do not read executor logs or modify files. Only explicit PASS with no findings can accept. Exact binding/refs: '
-            + encode({'binding':binding,'refs':list(expected),'read_commands':commands}),review_root,schema)
-        finish_review(controller, task, reviewer)
+        run_candidate(controller, task, spec, workspace, descriptor, candidate)
     except LeaseLostError as error:
         from orchestrator import atomic_json
         atomic_json(directory/'error.json',{'class':'STALE_RUN_DISCARDED','detail':str(error)[:500]})
     except Exception as error:
         from orchestrator import atomic_json
         detail = str(error)
-        code = 'BLOCKED_ENVIRONMENT' if isinstance(error,(OSError,ImportError,TimeoutError)) or any(x in detail for x in ('ENVIRONMENT','SANDBOX','SUBSCRIPTION_ACCOUNT')) else 'BLOCKED_MODEL' if any(x in detail for x in ('BLOCKED_MODEL','MODEL_UNAVAILABLE','EFFORT_UNAVAILABLE','MODEL_OR_EFFORT')) else 'NEEDS_REVIEW' if 'NEEDS_REVIEW' in detail else getattr(error,'code','REPO_EXECUTION_ERROR')
+        code = error_class(error)
         atomic_json(directory/'error.json',{'class':code,'detail':detail[:500]})
         controller.decision(task,code,owned=True)
     finally:
@@ -382,6 +316,206 @@ def run_task(controller, task):
         thread.join(timeout=10)
         controller.export_state(task['project_id'])
     return True
+
+
+
+def candidate_binding(task, spec, candidate):
+    from orchestrator import digest
+    return {'task_id': task['id'], 'spec_version': task['spec_version'], 'attempt': task['attempt'],
+            'spec_sha256': digest(spec), 'base_commit': spec['base_commit'],
+            **{k:candidate[k] for k in ('candidate_commit','candidate_tree_hash','manifest_hash','changed_paths_hash')},
+            'model_policy_sha256': spec['controller_model_policy']['sha256'],
+            'check_catalog_hash': digest(spec['controller_check_catalog'])}
+
+
+def run_candidate(controller, task, spec, workspace, descriptor, candidate, reuse_checks=False):
+    from orchestrator import digest, encode
+    directory = controller.task_dir(task)
+    binding = candidate_binding(task, spec, candidate)
+    checks = json.loads((directory/'checks.json').read_bytes()) if reuse_checks else {'binding': dict(binding), 'status': 'PASS', 'results': []}
+    if reuse_checks and not valid_checks(checks, binding, spec):
+        raise ValueError('CHECK_RECEIPT_NOT_REUSABLE')
+    for check_id in ([] if reuse_checks else spec['checks']):
+        generation = uuid.uuid4().hex
+        scratch = controller.data / 'scratch' / task['project_id'] / task['local_id'] / str(task['attempt']) / check_id / generation
+        owned(controller, task)
+        scratch.mkdir(parents=True, exist_ok=False)
+        context = {'binding': {'project_id': task['project_id'], 'task_id': task['local_id'], 'spec_version': task['spec_version'],
+            'attempt': task['attempt'], 'contract_hash': digest(spec)}, 'candidate_commit': candidate['candidate_commit'],
+            'snapshot_root': str(workspace), 'scratch_root': str(scratch), 'control_root': str(controller.data / 'projects'),
+            'evidence_root': str(controller.data / 'check-evidence' / task['project_id'] / task['local_id'] / str(task['attempt']) / check_id / generation)}
+        result = controller.repo_check(controller, task, check_id, spec['controller_check_catalog'], context)
+        if result.get('candidate_commit') != candidate['candidate_commit'] or result.get('input_hash') != candidate['manifest_hash'] or result.get('input_unchanged') is not True:
+            raise ValueError('CHECK_CANDIDATE_BINDING_MISMATCH')
+        checks['results'].append(result)
+        if result['status'] != 'PASS':
+            checks['status'] = result['status']
+            break
+    if snapshot(workspace, spec['base_commit']) != candidate:
+        raise ValueError('CHECK_INPUT_DRIFT')
+    write(controller, task, directory / 'checks.json', checks)
+    with controller.immediate():
+        owned(controller, task)
+        controller.db.execute('UPDATE tasks SET manifest_hash=?,check_ref=? WHERE id=?', (candidate['manifest_hash'], str(directory/'checks.json'), task['id']))
+    if checks['status'] == 'ERROR':
+        raise RuntimeError('BLOCKED_ENVIRONMENT: approved check error')
+    if checks['status'] != 'PASS':
+        with controller.immediate():
+            owned(controller, task)
+            if task['attempt'] <= spec['controller_limits']['repairs'] and not (directory/'integration.json').exists():
+                controller.db.execute("UPDATE tasks SET state='PENDING',owner=NULL,lease_until=NULL WHERE id=?", (task['id'],))
+                controller.event(task['project_id'], task['id'], 'REWORK_' + str(task['attempt']))
+            else:
+                controller.decision(task, 'CODE_CHECK_FAILED', owned=True)
+        return True
+    binding['check_receipt_hash'] = digest(checks)
+    review_root = controller.data / 'review-worktrees' / task['project_id'] / task['local_id'] / str(task['attempt'])
+    owned(controller, task)
+    review_root.parent.mkdir(parents=True, exist_ok=True)
+    if review_root.exists():
+        meta = json.loads((directory/'review-input.json').read_bytes())
+        if meta['binding'] != {**binding, 'check_receipt_hash':digest(checks)} or input_manifest(review_root) != meta['review_manifest']:
+            raise ValueError('EXISTING_REVIEW_CHECKOUT_CHANGED')
+    else:
+        git(spec['repo_root'], ['worktree','add','--detach',str(review_root),candidate['candidate_commit']], lambda: owned(controller,task))
+        if snapshot(review_root, spec['base_commit']) != candidate:
+            raise ValueError('REVIEW_CHECKOUT_MISMATCH')
+    review_inputs = review_root / '.controller-review'
+    owned(controller, task)
+    review_inputs.mkdir(exist_ok=True)
+    write(controller, task, review_inputs / 'task.json', spec)
+    write(controller, task, review_inputs / 'checks.json', checks)
+    expected = review_bytes(review_root, candidate, spec['base_commit'])
+    review_manifest = input_manifest(review_root)
+    meta = {'binding':binding,'read_hashes':{k:digest(v) for k,v in expected.items()},'review_root':str(review_root),
+            'review_manifest':review_manifest,'workspace':descriptor}
+    write(controller, task, directory/'review-input.json', meta)
+    fields = {k:{'type':'integer' if type(v) is int else 'string','enum':[v]} for k,v in binding.items()}
+    fields.update(verdict={'type':'string','enum':['PASS','FAIL','BLOCKED']}, findings={'type':'array','items':{'type':'string'},'maxItems':5},
+                  checked_evidence_refs={'type':'array','items':{'type':'string'}},summary={'type':'string','maxLength':400})
+    schema = {'type':'object','properties':fields,'required':list(fields),'additionalProperties':False}
+    with controller.immediate():
+        owned(controller, task)
+        controller.db.execute("UPDATE tasks SET state='REVIEWING' WHERE id=?", (task['id'],))
+    commands = [f'Get-Content -Raw -LiteralPath .controller-review/{name}' for name in ('task.json','checks.json')]
+    commands += [f'git show {candidate["candidate_commit"]}:{f["path"]}' for f in candidate['manifest']['files']]
+    commands += [f'git diff --no-ext-diff {spec["base_commit"]}..{candidate["candidate_commit"]}']
+    reviewer = controller.invoke_repo_sdk(task,'reviewer',
+        'Fresh independent read-only review. TASK/criteria and actual program results are in the two .controller-review files. '
+        'Run each read command SEPARATELY, return its complete unformatted output (no batching or truncation), and inspect actual diff. '
+        'Do not read executor logs or modify files. Only explicit PASS with no findings can accept. Exact binding/refs: '
+        + encode({'binding':binding,'refs':list(expected),'read_commands':commands}),review_root,schema)
+    finish_review(controller, task, reviewer)
+
+
+def error_class(error):
+    detail = str(error)
+    if isinstance(error, FileNotFoundError):
+        return 'NEEDS_RECONCILIATION'
+    if isinstance(error, (OSError, ImportError, TimeoutError)) or any(x in detail for x in ('ENVIRONMENT','SANDBOX','SUBSCRIPTION_ACCOUNT')):
+        return 'BLOCKED_ENVIRONMENT'
+    if any(x in detail for x in ('BLOCKED_MODEL','MODEL_UNAVAILABLE','EFFORT_UNAVAILABLE','MODEL_OR_EFFORT')):
+        return 'BLOCKED_MODEL'
+    if any(x in detail for x in ('NEEDS_REVIEW','BUDGET')):
+        return 'NEEDS_REVIEW'
+    return getattr(error, 'code', 'NEEDS_RECONCILIATION')
+
+
+def valid_checks(checks, binding, spec):
+    return (checks.get('binding') == binding and checks.get('status') == 'PASS'
+            and [r.get('check_id') for r in checks.get('results', [])] == spec['checks']
+            and all(r.get('status') == 'PASS' and r.get('candidate_commit') == binding['candidate_commit']
+                    and r.get('input_hash') == binding['manifest_hash'] and r.get('input_unchanged') is True
+                    for r in checks['results']))
+
+
+def completed_role(controller, task, role):
+    from orchestrator import encode
+    directory = controller.task_dir(task)
+    record = json.loads((directory/(role+'-sdk.json')).read_bytes())
+    intent = json.loads((directory/(role+'-dispatch.json')).read_bytes())
+    spec = json.loads(task['spec'])
+    route = spec['controller_model_policy']['routes'][role]
+    session = task['session_id' if role == 'executor' else 'reviewer_id']
+    if (record['status'] != 'completed' or record['role'] != role or record['thread_id'] != session
+            or intent != {'state':'DISPATCHED','task_id':task['id'],'spec_version':task['spec_version'],
+                          'attempt':task['attempt'],'thread_id':session,'model':route['model'],'effort':route['reasoning_effort']}
+            or record['model'] != route['model'] or record['effort'] != route['reasoning_effort']):
+        raise ValueError('SDK_COMPLETION_NOT_BOUND')
+    rows = controller.db.execute('SELECT * FROM calls WHERE task_id=? AND role=? AND session_id=?', (task['id'],role,session)).fetchall()
+    if len(rows) != 1 or rows[0]['model'] != route['model']:
+        raise ValueError('SDK_LEDGER_NOT_BOUND')
+    with controller.immediate():
+        owned(controller,task)
+        if rows[0]['completed'] is None:
+            usage = {**(record.get('usage') or {}), **{k:record.get(k) for k in ('model','effort','duration_ms','activity_counts','sdk_version','native_version','turn_id')}}
+            controller.db.execute('UPDATE calls SET completed=?,usage=? WHERE id=?', (time.time(),encode(usage),rows[0]['id']))
+    return {**record, 'payload':json.loads(record['final_response']), 'log':str(directory/(role+'-sdk.json'))}
+
+
+def reconcile_task(controller, stale):
+    """Claim an expired attempt, inspect durable evidence, never replay a dispatch."""
+    from orchestrator import encode, digest
+    with controller.immediate():
+        row = controller.db.execute('SELECT * FROM tasks WHERE id=?',(stale['id'],)).fetchone()
+        if dict(row) != dict(stale) or row['lease_until'] >= time.time():
+            return False
+        controller.db.execute("UPDATE tasks SET owner=?,lease_until=? WHERE id=?",(controller.owner,time.time()+60,row['id']))
+        task = controller.db.execute('SELECT * FROM tasks WHERE id=?',(row['id'],)).fetchone()
+    done = threading.Event()
+    thread = threading.Thread(target=controller.heartbeat,args=(task['id'],done),daemon=True)
+    thread.start()
+    directory = controller.task_dir(task)
+    try:
+        spec = json.loads(task['spec'])
+        owned(controller,task)
+        if (directory/'acceptance.json').is_file():
+            proof = json.loads((directory/'acceptance.json').read_bytes())
+            shadow = dict(task,state='ACCEPTED',acceptance_proof=encode(proof),acceptance_proof_hash=digest(proof))
+            verify_accepted(controller,shadow)
+            with controller.immediate():
+                owned(controller,task)
+                controller.db.execute("UPDATE tasks SET state='ACCEPTED',owner=NULL,lease_until=NULL,error_class=NULL,acceptance_proof=?,acceptance_proof_hash=? WHERE id=?",(encode(proof),digest(proof),task['id']))
+                controller.event(task['project_id'],task['id'],'ACCEPTED_'+str(task['attempt']))
+            return True
+        worker = completed_role(controller,task,'executor')
+        if set(worker['payload']) != {'summary'} or not isinstance(worker['payload']['summary'],str) or len(worker['payload']['summary'])>400:
+            raise ValueError('INVALID_EXECUTOR_RESPONSE')
+        descriptor = json.loads((directory/'workspace.json').read_bytes())
+        workspace = root_path(descriptor['path'],'recovery worktree')
+        if workspace != controller.data/'worktrees'/(task['project_id']+'-'+task['local_id'])/str(task['attempt']):
+            raise ValueError('RECOVERY_WORKSPACE_NOT_BOUND')
+        if digest((workspace/'.git').read_bytes())!=descriptor['git_link_hash'] or git(workspace,['branch','--show-current'])!=descriptor['branch']:
+            raise ValueError('RECOVERY_WORKSPACE_CHANGED')
+        candidate = snapshot(workspace,spec['base_commit'])
+        if (directory/'candidate.json').is_file():
+            if json.loads((directory/'candidate.json').read_bytes()) != candidate:
+                raise ValueError('RECOVERY_CANDIDATE_CHANGED')
+        else:
+            intent = json.loads((directory/'freeze-intent.json').read_bytes())
+            if intent != {'parent':descriptor['start_commit'],'tree':candidate['candidate_tree_hash']} or git(workspace,['rev-parse','HEAD^']) != intent['parent']:
+                raise ValueError('UNPROVEN_FREEZE')
+            if not candidate['changed_paths'] or not set(candidate['changed_paths']) <= set(spec['allowed_changes']):
+                raise ValueError('UNPROVEN_COMMIT_SCOPE')
+            write(controller,task,directory/'candidate.json',candidate)
+        calls = controller.db.execute("SELECT * FROM calls WHERE task_id=? AND role='reviewer' AND session_id=?",(task['id'],task['reviewer_id'])).fetchall()
+        if calls:
+            reviewer = completed_role(controller,task,'reviewer')
+            finish_review(controller,task,reviewer)
+        else:
+            checks_path = directory/'checks.json'
+            reusable = checks_path.is_file() and valid_checks(json.loads(checks_path.read_bytes()),candidate_binding(task,spec,candidate),spec)
+            if checks_path.exists() and not reusable:
+                raise ValueError('NEEDS_RECONCILIATION: checks are failed or stale')
+            run_candidate(controller,task,spec,workspace,descriptor,candidate,reuse_checks=reusable)
+        return True
+    except Exception as error:
+        controller.decision(task,error_class(error),owned=True)
+        return False
+    finally:
+        done.set()
+        thread.join(timeout=10)
+        controller.export_state(task['project_id'])
 
 
 def finish_review(controller, task, reviewer):
@@ -417,14 +551,19 @@ def finish_review(controller, task, reviewer):
     if reviewer['payload']['verdict'] != 'PASS':
         raise RuntimeError('NEEDS_REVIEW: new repair candidate requires a new independent review')
     names=['spec.json','workspace.json','candidate.json','checks.json','review-input.json','review-read-receipts.json','review.json','executor-sdk.json','reviewer-sdk.json']
+    if (directory/'integration.json').is_file():
+        names.append('integration.json')
     check_files = {}
     if controller.repo_check is approved_check:
         for check_id, result in zip(spec['checks'], checks['results']):
-            root = controller.data/'check-evidence'/task['project_id']/task['local_id']/str(task['attempt'])/check_id
+            root = Path(result['evidence_ref']).parent
+            expected_parent = controller.data/'check-evidence'/task['project_id']/task['local_id']/str(task['attempt'])/check_id
+            if root.parent.resolve() != expected_parent.resolve():
+                raise ValueError('NATIVE_CHECK_PATH_CHANGED')
             if Path(result['evidence_ref']).resolve() != (root/'receipt.json').resolve() or json.loads((root/'receipt.json').read_bytes()) != result:
                 raise ValueError('NATIVE_CHECK_RECEIPT_CHANGED')
             for name in ('receipt.json','intent.json','input-manifest.json','stdout.txt','stderr.txt'):
-                check_files[check_id+'/'+name] = digest((root/name).read_bytes())
+                check_files[check_id+'/'+root.name+'/'+name] = digest((root/name).read_bytes())
     proof={'policy':proof_policy(),'binding':binding,'files':{name:digest((directory/name).read_bytes()) for name in names},
         'check_files': check_files,
         'workspace':descriptor,'executor_session_id':worker['thread_id'],'reviewer_session_id':reviewer['thread_id'],
@@ -448,6 +587,8 @@ def verify_accepted(controller, task, with_evidence=False):
         if proof['policy'] != proof_policy() or digest(proof) != task['acceptance_proof_hash'] or json.loads((directory/'acceptance.json').read_bytes()) != proof:
             raise ValueError('REPO_PROOF_CHANGED')
         required = {'spec.json','workspace.json','candidate.json','checks.json','review-input.json','review-read-receipts.json','review.json','executor-sdk.json','reviewer-sdk.json'}
+        if (directory/'integration.json').is_file():
+            required.add('integration.json')
         if set(proof['files']) != required:
             raise ValueError('REPO_PROOF_FILE_SET_CHANGED')
         for name, sha in proof['files'].items():
@@ -467,12 +608,19 @@ def verify_accepted(controller, task, with_evidence=False):
         bound = {'task_id':task['id'],'spec_version':task['spec_version'],'attempt':task['attempt'],'spec_sha256':digest(spec),'base_commit':spec['base_commit'],
                  **{k:candidate[k] for k in ('candidate_commit','candidate_tree_hash','manifest_hash','changed_paths_hash')},
                  'model_policy_sha256':spec['controller_model_policy']['sha256'],'check_catalog_hash':digest(spec['controller_check_catalog'])}
+        if 'integration.json' in evidence:
+            integration = evidence['integration.json']
+            if integration['candidate_commit'] != candidate['candidate_commit']:
+                raise ValueError('INTEGRATED_CANDIDATE_CHANGED')
+            git(path,['merge-base','--is-ancestor',integration['expected_main'],candidate['candidate_commit']])
+            if not set(git(path,['diff','--name-only',integration['expected_main'],candidate['candidate_commit']]).splitlines()) <= set(spec['allowed_changes']):
+                raise ValueError('INTEGRATION_SCOPE_CHANGED')
         checks = evidence['checks.json']
         if checks['binding'] != bound or checks['status'] != 'PASS' or evidence['candidate.json'] != candidate or task['manifest_hash'] != candidate['manifest_hash']:
             raise ValueError('REPO_CHECK_CANDIDATE_CHANGED')
         if [r['check_id'] for r in checks['results']] != spec['checks'] or any(r['status']!='PASS' or r['candidate_commit']!=candidate['candidate_commit'] or r['input_hash']!=candidate['manifest_hash'] for r in checks['results']):
             raise ValueError('REPO_CHECK_SET_CHANGED')
-        required_checks={cid+'/'+name for cid in spec['checks'] for name in ('receipt.json','intent.json','input-manifest.json','stdout.txt','stderr.txt')}
+        required_checks={cid+'/'+Path(result['evidence_ref']).parent.name+'/'+name for cid,result in zip(spec['checks'],checks['results']) if 'evidence_ref' in result for name in ('receipt.json','intent.json','input-manifest.json','stdout.txt','stderr.txt')}
         if proof['evidence_status']=='LIVE_VERIFIED' and set(proof['check_files']) != required_checks:
             raise ValueError('REPO_NATIVE_CHECK_FILE_SET_CHANGED')
         for ref, sha in proof['check_files'].items():
