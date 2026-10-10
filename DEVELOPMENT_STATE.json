@@ -14,8 +14,16 @@
   "current_phase": "FRAME_006_FINAL_ACCEPTED_WITH_LIMITS",
   "current_task": "FRAME-006",
   "next_action": "停止扩建框架，开始用于真实项目；GitHub remote / Codex managed worktree / Windows upstream sandbox 作为后续增强，不属于 V1 阻塞项。",
-  "code_worktree": "E:\\零碎\\native-orchestrator-v03",
+  "code_worktree": ".",
   "code_branch": "codex/engineering-v03",
+  "repository_layout": {
+    "kind": "INDEPENDENT_CLONE",
+    "root": ".",
+    "path_resolution": "Resolve current relative paths from git rev-parse --show-toplevel; use this clone's DEVELOPMENT_STATE.json as development authority",
+    "historical_paths": "Original validation environment paths are retained as evidence only; do not use them as current repository authority",
+    "historical_runtime_artifacts": "Not included in Git clone; .runtime, historical SQLite and private configuration remain outside this checkout",
+    "documentation_cleanup": "Documentation only; frozen tag and acceptance evidence unchanged; no runtime revalidation or GitHub push"
+  },
   "resume_files": [
     "AGENTS.md",
     "PROJECT.md",
@@ -51,30 +59,30 @@
       "id": "FRAME-002",
       "status": "ACCEPTED_PREFLIGHT_ONLY",
       "candidate": "19d8150",
-      "evidence": "E:\\零碎\\native-orchestrator-v03\\TASKS\\FRAME-002-ACCEPTANCE.json"
+      "evidence": "TASKS/FRAME-002-ACCEPTANCE.json"
     },
     {
       "id": "FRAME-003",
       "status": "ACCEPTED_WORKSPACE_ONLY",
       "candidate": "be71b86",
-      "evidence": "E:\\零碎\\native-orchestrator-v03\\TASKS\\FRAME-003-ACCEPTANCE.json"
+      "evidence": "TASKS/FRAME-003-ACCEPTANCE.json"
     },
     {
       "id": "FRAME-004-Q01",
       "status": "READ_ONLY_SCHEMA_CANDIDATE_FOUND",
-      "evidence": "E:\\零碎\\native-orchestrator-v03\\TASKS\\FRAME-004-Q01-REPORT.json"
+      "evidence": "TASKS/FRAME-004-Q01-REPORT.json"
     },
     {
       "id": "FRAME-004",
       "status": "ACCEPTED_RESTRICTED_WINDOWS_CHECKS_ONLY",
       "candidate": "72ef920013981a5b81d3f414251498cf44e6d174",
-      "evidence": "E:\\零碎\\native-orchestrator-v03\\TASKS\\FRAME-004-ACCEPTANCE.json"
+      "evidence": "TASKS/FRAME-004-ACCEPTANCE.json"
     },
     {
       "id": "FRAME-005-MATERIAL",
       "status": "ACCEPTED_FAKE_READONLY_MATERIAL_API_ONLY",
       "candidate": "2731c3de32abc9e0557435ddf92f0b78311ac53a",
-      "evidence": "E:\\零碎\\native-orchestrator-v03\\TASKS\\FRAME-005-MATERIAL-ACCEPTANCE.json"
+      "evidence": "TASKS/FRAME-005-MATERIAL-ACCEPTANCE.json"
     },
     {
       "id": "FRAME-005-SDK-PILOT",
@@ -124,7 +132,7 @@
       "dependencies": [
         "FRAME-002"
       ],
-      "ticket": "E:\\零碎\\native-orchestrator-v03\\TASKS\\FRAME-003.md"
+      "ticket": "TASKS/FRAME-003.md"
     },
     {
       "id": "FRAME-004",
@@ -134,7 +142,7 @@
         "FRAME-002",
         "FRAME-003_INTERFACE"
       ],
-      "ticket": "E:\\零碎\\native-orchestrator-v03\\TASKS\\FRAME-004.md"
+      "ticket": "TASKS/FRAME-004.md"
     },
     {
       "id": "FRAME-005",
@@ -232,7 +240,7 @@
     "original data-live",
     "private configurations and credentials",
     "old ACCEPTANCE.json",
-    "original campus recruitment project"
+    "original private business project"
   ],
   "native_paid_api_fallback_allowed": false,
   "other_chat_messages_allowed": false,
@@ -248,7 +256,7 @@
   "validated_code_candidate_commit": "379c21041887a11e11e2144a6f1e4402d300554a",
   "baseline_binding_evidence": "TASKS/PLAN-BASELINE-BINDING.json",
   "plan_candidate_commit": "13360a9",
-  "authoritative_development_state": "E:\\零碎\\native-orchestrator\\DEVELOPMENT_STATE.json",
+  "authoritative_development_state": "DEVELOPMENT_STATE.json",
   "current_candidate_commit": "379c21041887a11e11e2144a6f1e4402d300554a",
   "latest_checks": {
     "candidate_commit": "379c21041887a11e11e2144a6f1e4402d300554a",
@@ -266,7 +274,7 @@
     "stable_project": "PROJECT.md",
     "decisions": "DECISIONS.md",
     "mainline": "MAINLINE.md",
-    "authority": "E:\\零碎\\native-orchestrator\\DEVELOPMENT_STATE.json"
+    "authority": "DEVELOPMENT_STATE.json"
   },
   "frame004_checks": {
     "native_boundary": "NATIVE_EXEC_BOUNDARY_VERIFIED",
@@ -427,8 +435,8 @@
   },
   "accepted_framework_stage": "V1_LOCAL_ENGINEERING_FINAL_ACCEPTED_WITH_LIMITS",
   "development_head_ref": "refs/heads/codex/engineering-v03",
-  "development_head_resolution": "git -C E:/零碎/native-orchestrator-v03 rev-parse HEAD",
-  "current_model_policy": "E:/零碎/native-orchestrator-v03/config/model-policy.toml",
+  "development_head_resolution": "git rev-parse HEAD",
+  "current_model_policy": "config/model-policy.toml",
   "frame006_round3": {
     "status": "ACCEPTED_WITH_LIMITS",
     "acceptance": "TASKS/FRAME-006-ROUND3-ACCEPTANCE.json",
