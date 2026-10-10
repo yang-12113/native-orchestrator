@@ -31,6 +31,7 @@ class CodexSdkAdapterTests(unittest.TestCase):
         self.account = 'chatgpt'
         self.efforts = ['max']
         self.observed_model = 'gpt-6-luna'
+        self.observed_effort = 'max'
         self.cursor = None
         self.selected = True
         self.final = '{"summary":"final"}'
@@ -41,7 +42,7 @@ class CodexSdkAdapterTests(unittest.TestCase):
         class Thread:
             id = 'fresh-sdk-thread'
             def read(self):
-                return N(thread=N(model=fixture.observed_model, reasoning_effort=N(value='max'),
+                return N(thread=N(model=fixture.observed_model, reasoning_effort=N(value=fixture.observed_effort),
                     cwd=N(root=str(fixture.root)), cli_version='0.162.0'))
             def turn(self, prompt, **options):
                 fixture.turns += 1
@@ -74,12 +75,12 @@ class CodexSdkAdapterTests(unittest.TestCase):
         assert self.root.resolve().is_relative_to(self.cases.resolve())
         self.tmp.cleanup()
 
-    def invoke(self, role='executor', authority=lambda: True, intent=None):
+    def invoke(self, role='executor', authority=lambda: True, intent=None, effort='max'):
         def record_intent(sid):
             self.intents += 1
             return True
         return CodexSdkAdapter().run(role, 'gpt-6-luna', 'owned fixture', str(self.root), self.root/'role.json',
-            schema={'type':'object'}, before_dispatch=authority, before_turn=intent or record_intent, sdk=self.sdk)
+            schema={'type':'object'}, before_dispatch=authority, before_turn=intent or record_intent, sdk=self.sdk, effort=effort)
 
     def test_final_response_only_and_intent_before_one_turn(self):
         value = self.invoke()
@@ -143,6 +144,18 @@ class CodexSdkAdapterTests(unittest.TestCase):
         self.assertNotIn('OPENAI_API_KEY',env)
         self.assertNotIn('SERVICE_ACCESS_TOKEN',env)
         self.assertEqual(env['PYTHONDONTWRITEBYTECODE'],'1')
+
+    def test_high_effort_is_explicitly_sent_to_thread_and_turn(self):
+        self.efforts=['high'];self.observed_effort='high'
+        result=self.invoke(effort='high')
+        self.assertEqual(self.options['config']['model_reasoning_effort'],'high')
+        self.assertEqual(self.turn_options['effort'],'high')
+        self.assertEqual(result['effort'],'high')
+
+    def test_preflight_required_reviewer_cannot_be_replaced_with_available_executor(self):
+        with self.assertRaisesRegex(SdkRoleError,'BLOCKED_MODEL'):
+            CodexSdkAdapter().preflight({'reviewer':{'model':'missing-reviewer','reasoning_effort':'max'}},str(self.root),before_dispatch=lambda:True,sdk=self.sdk)
+        self.assertEqual(self.turns,0)
 
 
 if __name__=='__main__':

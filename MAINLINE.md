@@ -9,3 +9,5 @@
 稳定目录 E:/零碎/native-orchestrator，开发 E:/零碎/native-orchestrator-v03、codex/engineering-v03。保留controller-v0.2.1-verified、engineering-g1-windows-verified与材料历史接纳；CLI worktree不同于managed列表。
 
 保护业务/data-live/私有配置/旧ACCEPTANCE/用户变更；不自动stash/reset/清理、不改ACL/runtime/helper、不加付费路线。真实remote push/凭据/生产操作另确认。未知派发先对账，不重放；默认无额外subagent，root独占主线与接纳。Git管代码、SQLite管运行、开发JSON管阶段、CURRENT最多投影。
+
+当前任务入口为TASKS/FRAME-006.md。本轮启动Git实查e78c721；ea73c49/9e062d6仅历史，当前HEAD须实时解析。current_candidate_commit是测试候选，不能当checkout HEAD。

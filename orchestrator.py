@@ -168,8 +168,18 @@ class Controller:
     def __init__(self, data, config=None):
         self.data = Path(data).resolve()
         self.assert_current_database(self.data)
-        self.config = config or {"executor": {"client": "mock", "model": "mock-executor"},
+        self.config = dict(config or {"executor": {"client": "mock", "model": "mock-executor"},
                                  "reviewer": {"client": "mock", "model": "mock-reviewer"}}
+                           )
+        if self.config.get("engineering", {}).get("enabled") is True:
+            from model_policy import load_policy
+            from codex_sdk_adapter import CodexSdkAdapter
+            from repo_execution import approved_check
+            load_policy()
+            for role in ("executor", "reviewer"):
+                self.config.setdefault(role, {"client": "mock", "model": "mock-" + role})
+            self.repo_adapter = CodexSdkAdapter()
+            self.repo_check = approved_check
         for role in ("executor", "reviewer"):
             route = self.config[role]
             if route.get("client") not in ("mock", "codex", "zcode", "workbuddy"):
@@ -265,6 +275,7 @@ class Controller:
                         (project, task, kind, time.time()))
 
     def submit(self, spec, key, planning_id=None):
+        spec = json.loads(encode(spec))
         if not isinstance(key, str) or not key or len(key) > 200:
             raise ValueError("Idempotency key must have 1..200 characters")
         if not isinstance(spec.get("tasks"), list) or not 1 <= len(spec["tasks"]) <= 100:
@@ -274,6 +285,17 @@ class Controller:
             raise ValueError("Invalid or duplicate task ids")
         graph = {}
         for task in spec["tasks"]:
+            if task.get("task_kind") == "repo_worktree_v03":
+                from repo_execution import prepare_task
+                if len(spec["tasks"]) != 1:
+                    raise ValueError("ROUND1_SINGLE_REPO_TASK_REQUIRED")
+                if not isinstance(task.get("objective"), str) or not 1 <= len(task["objective"]) <= 12000:
+                    raise ValueError("Invalid objective")
+                prepared = prepare_task(self, task)
+                task.clear()
+                task.update(prepared)
+                graph[task["id"]] = []
+                continue
             if task.get("task_kind", "artifact_text") not in ("artifact_text", "public_source"):
                 raise ValueError("Unsupported task kind; repo_patch requires the unimplemented v0.3 runtime")
             if not isinstance(task.get("objective"), str) or len(task["objective"]) > 12000:
@@ -727,12 +749,64 @@ class Controller:
                 "bound_independent_review": verified["review"], "acceptance_proof_hash": digest(verified["proof"]),
                 "program_checks": verified["checks"]}
 
+    def verify_task_accepted(self, task, with_evidence=False, _cache=None, _ancestry=()):
+        if json.loads(task["spec"]).get("task_kind") == "repo_worktree_v03":
+            from repo_execution import verify_accepted
+            return verify_accepted(self, task, with_evidence)
+        return self.verify_accepted(task, with_evidence, _cache, _ancestry)
+
+    def invoke_repo_sdk(self, task, role, prompt, cwd, schema):
+        from repo_execution import owned
+        spec = json.loads(task["spec"])
+        route = spec["controller_model_policy"]["routes"][role]
+        directory = self.task_dir(task)
+        log = directory / (role + "-sdk.json")
+        call_id = None
+
+        def reserve(thread_id):
+            nonlocal call_id
+            with self.immediate():
+                owned(self, task)
+                used = self.db.execute("SELECT COUNT(*) FROM calls WHERE task_id LIKE ?", (task["project_id"] + ":%",)).fetchone()[0]
+                if used >= spec["controller_limits"]["turns"]:
+                    raise RuntimeError("BUDGET_EXHAUSTED")
+                call_id = self.reserve_call(task["project_id"], task["id"], role, route["model"], task)
+                column = "session_id" if role == "executor" else "reviewer_id"
+                self.db.execute("UPDATE tasks SET " + column + "=? WHERE id=?", (thread_id, task["id"]))
+                self.db.execute("UPDATE calls SET session_id=? WHERE id=?", (thread_id, call_id))
+            atomic_json(directory / (role + "-dispatch.json"), {"state": "DISPATCHED", "task_id": task["id"],
+                "spec_version": task["spec_version"], "attempt": task["attempt"], "thread_id": thread_id,
+                "model": route["model"], "effort": route["reasoning_effort"]})
+            return True
+
+        try:
+            result = self.repo_adapter.run(role, route["model"], prompt, str(cwd), log, schema=schema,
+                effort=route["reasoning_effort"], timeout=self.config.get("timeout_seconds", 120),
+                before_dispatch=lambda: owned(self, task), before_turn=reserve)
+            if result["model"] != route["model"] or result["effort"] != route["reasoning_effort"]:
+                raise ValueError("MODEL_OR_EFFORT_MISMATCH")
+            return result
+        finally:
+            if call_id is not None and log.is_file():
+                record = json.loads(log.read_bytes())
+                with self.immediate():
+                    owned(self, task)
+                    usage = {**(record.get("usage") or {}), "model": route["model"], "effort": route["reasoning_effort"],
+                        "duration_ms": record.get("duration_ms"), "activity_counts": record.get("activity_counts", {}),
+                        "sdk_version": record.get("sdk_version"), "native_version": record.get("native_version"),
+                        "turn_id": record.get("turn_id")}
+                    self.db.execute("UPDATE calls SET completed=?,usage=? WHERE id=?",
+                        (time.time() if record.get("status") == "completed" else None, encode(usage), call_id))
+
     def run_one(self):
         self.recover()
         self.audit_accepted()
         task = self.claim()
         if task is None:
             return False
+        if json.loads(task["spec"]).get("task_kind") == "repo_worktree_v03":
+            from repo_execution import run_task
+            return run_task(self, task)
         directory = self.task_dir(task)
         directory.mkdir(parents=True, exist_ok=True)
         done = threading.Event()
@@ -959,7 +1033,7 @@ class Controller:
         query = "SELECT * FROM tasks WHERE state='ACCEPTED'" + (" AND project_id=?" if project else "")
         for task in self.db.execute(query, (project,) if project else ()).fetchall():
             try:
-                self.verify_accepted(task, _cache=cache)
+                self.verify_task_accepted(task, _cache=cache)
             except (OSError, ValueError, KeyError, TypeError, AttributeError):
                 changed.append(task)
         invalidated = 0

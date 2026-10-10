@@ -1,15 +1,23 @@
-# FRAME-006：接入已验证 SDK 工程接口（下一票据，未实施）
+# FRAME-006 ROUND-1：SDK direct-worktree 接入现有 Controller
 
-前置：FRAME-005-SDK-PILOT-ACCEPTANCE仅接纳自有fixture。源码9e062d6、原148项回归及新9项SDK fake通过；真实SDK turn=2，candidate/fixture main=15bbb6e。不要重放既有fixture或误将其当生产工程队列完成。
+用户本轮完整请求来自 attachments/f02876f4-830e-4f49-8bf5-4277210fbe1c/已粘贴的文本.txt；它取代此前“下一票据未实施/沿用上一轮预算”的说明。
 
-下一范围：在现有Controller中增一个明确可关的工程任务入口，复用同一SQLite tasks/calls/owner/attempt/spec_version/lease和预算；默认关闭生产工程gate。将试点的范围验证、candidate、批准checks、fresh SDK Review、proof读取/失效和有限返工接到这一入口。逐步复用已验收接口，不重写旧文本run_one或新建另一生产数据库。
+启动实查：开发 HEAD=e78c72142334ec9dcf509b38b35dae84f45297db，codex/engineering-v03，工作区干净；主仓库 HEAD=ec93fb51246f711d169f2aeb2df3a151c39969ae。ea73c49是reconciliation前历史，9e062d6是已接纳pilot代码候选，不是当前HEAD。当前HEAD始终用git rev-parse核实，不在可变文件中伪造自引用SHA。
 
-只需一个工程job，不建设复杂队列/Dashboard/多Reviewer。普通输入由标准task branch/worktree承载；对Git metadata/保护路径/目录链接的限制和候选审查前后漂移检查先补fake负例。当前单次driver还没有通用生产保护、自动恢复或全面审查；不直接向用户正式数据开放。
+唯一目标：现有Controller.submit/run_one和既有projects/tasks/calls SQLite、owner/lease/attempt/spec/proof体系自动跑通普通工程Task→SDK→candidate→批准checks→fresh独审→本地ACCEPTED。没有新调度数据库/fixture_runs表；不重写旧文本流程或删G1/quarantine/RPC能力。
 
-验证重点：SDK响应schema/模型档位/cwd/预算/租约失效、保护路径或未批准文件改动、环境ERROR不质量返工、新SHA使旧PASS失效、exact candidate读取与review proof、本地状态重启、文字基线回归。前述fixture仅验证模型真实读写/审查；生产代码独审另按窄任务安排。
+模型策略唯一源=config/model-policy.toml；中文注释。executor/worker=Luna High，reviewer/escalation=Sol High，不默认max/xhigh，不静默降级。SDK.models零turn已验证两者；receipt=.runtime/frame006-model-probe-20261010-a26f/receipt.json，policy SHA=8749350fc3865e3808b497850f8a2947a804577274eb988ac0844b28a5dc5ea6。SDK继续用既有隔离安装0.162.0 bundle，正常复用登录，不做凭据操作。
 
-真实模型预算：本轮已用2/3；这张下一票据不自动增加预算或再跑live。repair/check/review状态机先fake；新的真实验证需记录新fixture和明确预算，不能盲重放不确定turn。
+文件白名单：orchestrator.py（薄分发/SDK预算调用）、repo_execution.py（一次工程流程与proof验证，无Manager）、model_policy.py、config/model-policy.toml、codex_sdk_adapter.py、run_tests.py、新test_model_policy.py/test_repo_controller.py、SDK对应测试、FRAME006文档/证据/权威状态。run_direct_worktree_pilot.py及历史验收不重放；旧原生RPC/check/material/workspace语义不放宽。legacy文字proof校验函数/策略保持，以新的generic verifier分发工程proof。
 
-后置：latest-main merge/并行冲突、promotion CAS/完整Git-DB崩溃恢复在FRAME007/008；remote先local bare；真实push、凭据、生产环境及系统配置仍需用户确认。Windows只记录健康状态，不自行改ACL/runtime/helper。
+新真实fixture必须全新：.runtime/frame006-round1-20261010-a26f，source是自建UTF8小Git仓库，缺陷add返回减法，固定test_calculator.py保护，允许修改仅calculator.py。Controller生产入口enabled且approved_repo_roots仅这一个source；task branch/worktree和独立detached review checkout由Controller管理。源main不晋升，本轮只接纳candidate，不做remote/promotion。
 
-所有权：root核心整合与状态；在真正开始代码前补齐修改白名单/确切契约和冻结候选。测试与最终代码独审分离，辅助仅窄票据。当前这张票据仅定义下一动作，不含新实现。
+本轮新预算：目标Executor1+Reviewer1，SDK真实turn硬上限3（与上一轮2turn分开计）。checks FAIL可最多repair1再首次Review，共3；Review FAIL不接纳，若没有完整修复+再审预算则NEEDS_REVIEW，不沿用旧PASS。owner/lease/spec栅栏和调用意图在派发前；未知结果先decision不重放。
+
+最小必要负例：policy解析/禁降级，真实SDK参数与usage记录，checks FAIL不Reviewer，Review FAIL不ACCEPT，repair新SHA旧证失效，环境ERROR=BLOCKED_ENVIRONMENT不质量返工，exact proof绑定/篡改拒绝。先fake+新自有Git fixture，旧回归继续无新失败；Windows已知symlink skip如实保留。真实调用只用于最后验收。
+
+接纳proof至少绑定task/spec/attempt/base/candidate/tree/manifest/changedpaths/check receipt/reviewer model-effort/session/review/proofhash；Review输入含TASK/criteria/checks/diff，fresh只读thread，严格最终JSON本地验证、真实读取活动留证据。usage记录原生token/cached/output/total、duration及已有活动计数，不做金额路由系统。
+
+ROUND1禁止remote/push/Actions、managed worktree、ACL/helper/runtime修补、Dashboard、复杂队列/DAG、多Reviewer/大代理拓扑、rebase/stash/reset/clean、自动升级、大迁移/重设计SQLite、生产部署。完整crash/main并发冲突/promotion CAS矩阵明确留ROUND2；本轮只能称本地工程接纳，不声称完整发布恢复。
+
+当前由root完成接线与必要fake验证；最终真实质量闸门是独立Sol High Reviewer。无额外开发模型调用；严格留2–3turn给本轮真实Controller样例。

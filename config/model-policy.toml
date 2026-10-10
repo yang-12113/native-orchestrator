@@ -1,0 +1,22 @@
+# Codex Project OS 模型策略
+# 这是工程路径所有角色的唯一模型选择配置源；改模型/强度只改本文件。
+# 高频执行：Luna High；独立质量闸门及复杂升级：Sol High。
+# 不使用 GPT-6 Sol，不默认 xhigh/max，不建立模型 alias 或动态低质路由。
+# 指定 Reviewer 不可用时必须 BLOCKED_MODEL / NEEDS_REVIEW，不得用 Luna 替代。
+allow_reviewer_downgrade = false
+
+[executor]
+model = "gpt-6-luna"
+reasoning_effort = "high"
+
+[worker]
+model = "gpt-6-luna"
+reasoning_effort = "high"
+
+[reviewer]
+model = "gpt-6.1-sol"
+reasoning_effort = "high"
+
+[escalation]
+model = "gpt-6.1-sol"
+reasoning_effort = "high"

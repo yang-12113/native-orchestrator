@@ -2,6 +2,7 @@
 import json
 import os
 import threading
+import time
 from pathlib import Path
 
 from native_rpc import redact
@@ -50,6 +51,25 @@ def plain(value):
 
 
 class CodexSdkAdapter:
+    def preflight(self, routes, cwd, *, before_dispatch, sdk=None):
+        fence(before_dispatch)
+        if sdk is None:
+            import openai_codex as sdk
+        config = sdk.CodexConfig(cwd=str(cwd), env=role_environment(), config_overrides=overrides())
+        with sdk.Codex(config) as codex:
+            fence(before_dispatch)
+            account = plain(codex.account(refresh_token=False))
+            if (account.get('account') or {}).get('type') != 'chatgpt':
+                raise SdkRoleError('SUBSCRIPTION_ACCOUNT_UNVERIFIED')
+            page = codex.models()
+            for role, route in routes.items():
+                model = next((m for m in page.data if m.model == route['model']), None)
+                if model is None or route['reasoning_effort'] not in {x.reasoning_effort.value for x in model.supported_reasoning_efforts}:
+                    raise SdkRoleError('BLOCKED_MODEL: ' + role)
+            return {'sdk_version': sdk.__version__, 'native_user_agent': codex.metadata.userAgent,
+                    'account_type': 'chatgpt', 'routes': routes, 'model_turns': 0,
+                    'model_catalog_next_cursor_present': page.next_cursor is not None}
+
     def run(self, role, model, prompt, cwd, log, *, schema, before_dispatch,
             before_turn, effort='max', timeout=120, sdk=None):
         if role not in ('executor', 'reviewer') or not isinstance(prompt, str):
@@ -96,6 +116,7 @@ class CodexSdkAdapter:
             fence(before_dispatch)
             handle = thread.turn(prompt, model=model, effort=effort, sandbox=sandbox,
                 approval_mode=sdk.ApprovalMode.deny_all, output_schema=schema)
+            started_at = time.monotonic()
             timed_out = threading.Event()
 
             def interrupt():
@@ -120,6 +141,11 @@ class CodexSdkAdapter:
                 'model': observed.model, 'effort': observed.reasoning_effort.value,
                 'final_response': result.final_response, 'error': plain(result.error),
                 'usage': plain(result.usage), 'items': plain(result.items)}
+            record['duration_ms'] = getattr(result, 'duration_ms', None)
+            if record['duration_ms'] is None:
+                record['duration_ms'] = round((time.monotonic() - started_at) * 1000)
+            record['activity_counts'] = {kind: sum(item.get('type') == kind for item in record['items'])
+                for kind in {item.get('type') for item in record['items'] if isinstance(item, dict)}}
             path = Path(log)
             path.parent.mkdir(parents=True, exist_ok=True)
             with path.open('x', encoding='utf-8') as stream:
@@ -132,9 +158,14 @@ class CodexSdkAdapter:
             if timed_out.is_set():
                 raise SdkRoleError('MODEL_TIMEOUT_REQUIRES_RECONCILIATION')
             if status != 'completed':
+                error_text = json.dumps(record['error'],ensure_ascii=False).lower()
+                if any(marker in error_text for marker in ('model_not_found','model_unavailable','unsupported model','model is not available','model is not supported')):
+                    raise SdkRoleError('BLOCKED_MODEL')
+                if any(marker in error_text for marker in ('helper_unknown_error','sandbox setup','setup refresh had errors','mxc launcher')):
+                    raise SdkRoleError('BLOCKED_ENVIRONMENT_NATIVE_SANDBOX')
                 raise SdkRoleError('MODEL_RESULT_FAILED_REQUIRES_RECONCILIATION')
             text = result.final_response
             if not isinstance(text, str) or len(text.encode('utf-8')) > 8192:
                 raise SdkRoleError('INVALID_OR_OVERSIZED_FINAL_RESPONSE')
             payload = json.loads(text)
-            return {k: record[k] for k in ('sdk_version', 'native_version', 'thread_id', 'turn_id', 'model', 'effort', 'usage')} | {'payload': payload, 'log': str(path)}
+            return {k: record[k] for k in ('sdk_version', 'native_version', 'thread_id', 'turn_id', 'model', 'effort', 'usage', 'duration_ms', 'activity_counts')} | {'payload': payload, 'log': str(path)}

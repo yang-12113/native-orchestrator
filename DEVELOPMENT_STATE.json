@@ -11,9 +11,9 @@
   "baseline_code_commit": "b97788f0c7f3318874765c0fcd664d4bc05e80ed",
   "baseline_tag": "controller-v0.2.1-verified",
   "baseline_regression_tests": 59,
-  "current_phase": "FRAME_005_SDK_FIXTURE_ACCEPTED_FRAME006_PENDING",
+  "current_phase": "FRAME_006_ROUND1_IMPLEMENTING",
   "current_task": "FRAME-006",
-  "next_action": "Write narrowly scoped FRAME006 ticket to integrate verified SDK direct-worktree route with existing Controller engineering task/proof. No new live pilot replay; production gate remains closed. Keep two-turn evidence and defer full promotion/recovery/remote.",
+  "next_action": "Implement thin existing Controller wiring, policy and exact repo proof; fake/regression then fresh Controller fixture, Luna High Executor + Sol High Reviewer, target2/hard3 SDK turns.",
   "code_worktree": "E:\\零碎\\native-orchestrator-v03",
   "code_branch": "codex/engineering-v03",
   "resume_files": [
@@ -21,7 +21,7 @@
     "PROJECT.md",
     "MAINLINE.md",
     "DEVELOPMENT_STATE.json",
-    "E:\\零碎\\native-orchestrator-v03\\TASKS\\FRAME-005.md"
+    "TASKS/FRAME-006.md"
   ],
   "completed": [
     {
@@ -136,11 +136,12 @@
     },
     {
       "id": "FRAME-006",
-      "owner": "root; limited independent validation after implementation",
-      "status": "NEXT_NOT_STARTED",
+      "owner": "root integration; fresh Sol High native quality review",
+      "status": "ROUND1_IMPLEMENTING",
       "dependencies": [
         "FRAME-005"
-      ]
+      ],
+      "ticket": "TASKS/FRAME-006.md"
     },
     {
       "id": "FRAME-007",
@@ -236,7 +237,7 @@
   "baseline_binding_evidence": "TASKS/PLAN-BASELINE-BINDING.json",
   "plan_candidate_commit": "13360a9",
   "authoritative_development_state": "E:\\零碎\\native-orchestrator\\DEVELOPMENT_STATE.json",
-  "current_candidate_commit": "9e062d607dfc67c6d6d911ce716c06e93c2c612c",
+  "current_candidate_commit": null,
   "latest_checks": {
     "candidate_commit": "9e062d607dfc67c6d6d911ce716c06e93c2c612c",
     "tests_run": 157,
@@ -358,5 +359,24 @@
     "reconciled_on": "2026-10-10",
     "receipt": "TASKS/PLAN-RECONCILIATION-20261010.md",
     "source_snapshot_commit": "ea73c49ab1e5d413ff85cb79935502d3ef1df1c0"
+  },
+  "git_checkpoint_semantics": {
+    "startup_verified_development_head": "e78c72142334ec9dcf509b38b35dae84f45297db",
+    "startup_main_head": "ec93fb51246f711d169f2aeb2df3a151c39969ae",
+    "actual_current_head": "resolve with git rev-parse HEAD",
+    "current_candidate_commit": "tested/reviewed code candidate; not current checkout HEAD"
+  },
+  "frame006_round1": {
+    "status": "IMPLEMENTING",
+    "sdk_turn_budget": 3,
+    "sdk_turns_reserved": 0,
+    "model_policy": "config/model-policy.toml",
+    "fixture": ".runtime/frame006-round1-20261010-a26f",
+    "round2_deferred": [
+      "crash reconciliation matrix",
+      "main concurrency/conflicts",
+      "serial promotion CAS",
+      "remote"
+    ]
   }
 }
