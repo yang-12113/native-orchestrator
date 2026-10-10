@@ -1,0 +1,2 @@
+# Historical documents and evidence retain their original committed bytes.
+/docs/** -text

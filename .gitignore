@@ -12,3 +12,9 @@
 /.pytest_cache/
 .env
 .env.*
+
+# Relocated Python caches and private configuration.
+**/__pycache__/
+/config/config.live.json
+/config/config.codex.json
+/config/config.workbuddy.json
