@@ -18,3 +18,5 @@
 - D011：检查/审查绑定exact SHA；main变化需merge/重测/重审，串行promotion重核expected main。ff-only不替代栅栏、intent与Git/DB对账；V1无自动rebase/force。
 - D012：remote失败只REMOTE_PENDING/ERROR，不撤销本地ACCEPTED。MAINLINE仅入口，开发JSON只阶段，Git/SQLite分别掌权，CURRENT最多投影；迁移/managed-worktree/升级守护后置。
 - D013：本次目标2、硬上限3真实turn，repair<=1；检查FAIL可repair后首审，Review FAIL后repair需再审超过预算则停NEEDS_REVIEW，禁止旧PASS用于新SHA。spike不另花turn，Windows不改ACL/helper/runtime。
+
+- D014（FRAME006 ROUND1）：普通工程角色唯一策略config/model-policy.toml：Executor/worker Luna High、Reviewer/escalation Sol High，禁止降级。原SDK pilot Luna/max仅历史；current_candidate是测试源码，不是current HEAD。现有Controller本地工程接纳与182项回归通过，完整promotion/recovery仍ROUND2。

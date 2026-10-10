@@ -1,0 +1,69 @@
+{
+  "schema_version": "native-orchestrator.round-acceptance/0.3",
+  "task_id": "FRAME-006-ROUND-1",
+  "status": "ACCEPTED_WITH_LIMITS",
+  "accepted_on": "2026-10-10",
+  "candidate_code_commit": "757932f40bbd3172601a5030e33d2a22fe170611",
+  "current_head_resolution": "git rev-parse HEAD; candidate above is tested source, subsequent checkpoints may be documentation only",
+  "initial_checkpoint": "e78c72142334ec9dcf509b38b35dae84f45297db",
+  "model_policy": "config/model-policy.toml",
+  "allow_reviewer_downgrade": false,
+  "actual_roles": [
+    {
+      "role": "executor",
+      "model": "gpt-6-luna",
+      "effort": "high",
+      "native_version": "0.162.0",
+      "duration_ms": 10685
+    },
+    {
+      "role": "reviewer",
+      "model": "gpt-6.1-sol",
+      "effort": "high",
+      "native_version": "0.162.0",
+      "duration_ms": 30977
+    }
+  ],
+  "live_sdk_turns": 2,
+  "hard_budget": 3,
+  "repairs": 0,
+  "usage": {
+    "input_tokens": 157754,
+    "cached_input_tokens": 122752,
+    "output_tokens": 1273,
+    "total_tokens": 159027,
+    "reasoning_output_tokens": 192,
+    "uncached_input_tokens": 35002,
+    "duration_ms": 41662
+  },
+  "regression": {
+    "run": 182,
+    "passed": 177,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 5,
+    "skip_reason": "real OS symlink creation WinError1314"
+  },
+  "fixture_candidate_commit": "2a97196117f43ca2d3321dce1aae4f5427903175",
+  "candidate_tree_hash": "e02f5b85acf0f8356f2a325324d577f54a4fb8b9",
+  "runtime_acceptance_receipt": "E:\\零碎\\native-orchestrator-v03\\.runtime\\frame006-round1-20261010-a26f\\controller-data\\projects\\p-7bfc760188f34f35\\addition\\1\\acceptance.json",
+  "runtime_acceptance_proof_hash": "f7c2ca823637626420c13ac3f1c0d9c7874938dac98568ad74043b0c04552c11",
+  "runtime_sqlite": "E:\\零碎\\native-orchestrator-v03\\.runtime\\frame006-round1-20261010-a26f\\controller-data\\state.sqlite",
+  "runtime_task_state": "ACCEPTED",
+  "source_repo_unchanged": true,
+  "existing_sqlite_tables_reused": true,
+  "legacy_text_proof_functions_unchanged": true,
+  "validation_path": "Controller.submit/run_one generated native candidate/checks/fresh review; fixed finalization revalidated same complete SDK output via Controller.reconcile_completed_repo_review",
+  "protocol_fix_additional_turns": 0,
+  "original_initial_failure_report_preserved": true,
+  "limits": [
+    "single independent ordinary Git task; existing tracked UTF8 text modifications only",
+    "local candidate acceptance only; no main promotion/remote",
+    "full crash recovery/main concurrency/text+semantic conflict/promotion CAS deferred to round2",
+    "actual OS symlinks and adversarial SDK readonly-denial probe unverified",
+    "corrected finalization used existing completed native records; no extra full live replay after fix",
+    "production Controller code wired in development branch; no production deployment"
+  ],
+  "no_global_codex_config_credential_acl_runtime_helper_changes": true,
+  "evidence_binding": "TASKS/FRAME-006-ROUND1-EVIDENCE-BINDING.json"
+}

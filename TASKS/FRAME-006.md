@@ -21,3 +21,5 @@
 ROUND1禁止remote/push/Actions、managed worktree、ACL/helper/runtime修补、Dashboard、复杂队列/DAG、多Reviewer/大代理拓扑、rebase/stash/reset/clean、自动升级、大迁移/重设计SQLite、生产部署。完整crash/main并发冲突/promotion CAS矩阵明确留ROUND2；本轮只能称本地工程接纳，不声称完整发布恢复。
 
 当前由root完成接线与必要fake验证；最终真实质量闸门是独立Sol High Reviewer。无额外开发模型调用；严格留2–3turn给本轮真实Controller样例。
+
+ROUND1已结束，限定接纳和实际模型/usage/测试/候选见 FRAME-006-ROUND1-ACCEPTANCE.json；不在本轮继续ROUND2。

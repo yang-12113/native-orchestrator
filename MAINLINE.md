@@ -11,3 +11,5 @@
 保护业务/data-live/私有配置/旧ACCEPTANCE/用户变更；不自动stash/reset/清理、不改ACL/runtime/helper、不加付费路线。真实remote push/凭据/生产操作另确认。未知派发先对账，不重放；默认无额外subagent，root独占主线与接纳。Git管代码、SQLite管运行、开发JSON管阶段、CURRENT最多投影。
 
 当前任务入口为TASKS/FRAME-006.md。本轮启动Git实查e78c721；ea73c49/9e062d6仅历史，当前HEAD须实时解析。current_candidate_commit是测试候选，不能当checkout HEAD。
+
+FRAME006 ROUND1结果见 TASKS/FRAME-006-ROUND1-ACCEPTANCE.json / REPORT：Controller本地工程接纳已验证，完整崩溃/并行promotion在ROUND2。实际HEAD查Git；源码验收候选757932f，不与后续文档checkpoint混同。

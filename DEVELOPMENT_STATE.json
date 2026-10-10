@@ -6,14 +6,14 @@
   "maintained_by": "root",
   "objective": "实现受限自动工程执行闭环，并通过真实工程与恢复验收",
   "runtime_version": "0.2.1",
-  "runtime_overall_status": "PARTIAL",
+  "runtime_overall_status": "PARTIAL_LOCAL_ENGINEERING_ONLY",
   "v03_runtime_implemented": false,
   "baseline_code_commit": "b97788f0c7f3318874765c0fcd664d4bc05e80ed",
   "baseline_tag": "controller-v0.2.1-verified",
   "baseline_regression_tests": 59,
-  "current_phase": "FRAME_006_ROUND1_DIFF_RECEIPT_PROTOCOL_FIX",
+  "current_phase": "FRAME_006_ROUND1_ACCEPTED_WITH_LIMITS",
   "current_task": "FRAME-006",
-  "next_action": "Live SDK turns2 completed at same candidate2a97196117f43ca2d3321dce1aae4f5427903175. Original Controller rejected extra legitimate diff ref as INCOMPLETE_REVIEW. Diff is now explicit fifth receipt. Wait fake tests exec63080, freeze correction and regression; then invoke Controller.reconcile_completed_repo_review for p-7bfc760188f34f35:addition with existing complete logs, no model replay. Never rerun bootstrap.",
+  "next_action": "Round1 complete. Round2 ticket should cover crash reconciliation/main changes/text and semantic conflicts/serial promotion CAS using fake/local tests. Do not replay completed live fixture or enlarge this round; no push/global/credential/system changes.",
   "code_worktree": "E:\\零碎\\native-orchestrator-v03",
   "code_branch": "codex/engineering-v03",
   "resume_files": [
@@ -81,6 +81,12 @@
       "status": "ACCEPTED_NATIVE_FIXTURE_SLICE_ONLY",
       "candidate": "9e062d607dfc67c6d6d911ce716c06e93c2c612c",
       "evidence": "TASKS/FRAME-005-SDK-PILOT-ACCEPTANCE.json"
+    },
+    {
+      "id": "FRAME-006-ROUND1",
+      "status": "ACCEPTED_WITH_LIMITS",
+      "candidate": "757932f40bbd3172601a5030e33d2a22fe170611",
+      "evidence": "TASKS/FRAME-006-ROUND1-ACCEPTANCE.json"
     }
   ],
   "tasks": [
@@ -137,7 +143,7 @@
     {
       "id": "FRAME-006",
       "owner": "root integration; fresh Sol High native quality review",
-      "status": "ROUND1_IMPLEMENTING",
+      "status": "ROUND1_ACCEPTED_WITH_LIMITS_ROUND2_PENDING",
       "dependencies": [
         "FRAME-005"
       ],
@@ -194,7 +200,7 @@
   ],
   "gates": {
     "G1": "PASS_RESTRICTED_WINDOWS",
-    "G2": "FIXTURE_SLICE_PASS_CONTROLLER_INTEGRATION_PENDING",
+    "G2": "CONTROLLER_ROUND1_LOCAL_ACCEPTED_WITH_LIMITS",
     "G3": "NOT_STARTED",
     "G4": "NOT_STARTED"
   },
@@ -237,18 +243,17 @@
   "baseline_binding_evidence": "TASKS/PLAN-BASELINE-BINDING.json",
   "plan_candidate_commit": "13360a9",
   "authoritative_development_state": "E:\\零碎\\native-orchestrator\\DEVELOPMENT_STATE.json",
-  "current_candidate_commit": "40d4d5847a5ee71c47254b08442da62b2c522fe4",
+  "current_candidate_commit": "757932f40bbd3172601a5030e33d2a22fe170611",
   "latest_checks": {
-    "candidate_commit": "9e062d607dfc67c6d6d911ce716c06e93c2c612c",
-    "tests_run": 157,
-    "passed": 152,
-    "skipped": 5,
+    "candidate_commit": "757932f40bbd3172601a5030e33d2a22fe170611",
+    "tests_run": 182,
+    "passed": 177,
     "failed": 0,
     "errors": 0,
-    "source_unchanged": true,
-    "evidence": "TASKS/FRAME-005-SDK-EVIDENCE-BINDING.json",
+    "skipped": 5,
     "native_model_turns": 2,
-    "scope": "148 existing regression plus9 isolated SDK fake tests; native fixture separately verified"
+    "evidence": "TASKS/FRAME-006-ROUND1-EVIDENCE-BINDING.json",
+    "source_unchanged": true
   },
   "collaboration_files": {
     "agent_rules": "AGENTS.md",
@@ -338,7 +343,7 @@
     "materials": "ACCEPTED_FAKE_API_ONLY",
     "native_role": "NATIVE_SDK_FIXTURE_VERIFIED_ONLY",
     "proposal_binding": "DEFERRED_QUARANTINE",
-    "production_route": "NOT_IMPLEMENTED",
+    "production_route": "CONTROLLER_LOCAL_ROUTE_ROUND1_WIRED_DEVELOPMENT_BRANCH",
     "live_proposal_model_turns": 0,
     "default_route": "OFFICIAL_SDK_DIRECT_WORKTREE",
     "live_direct_model_turns": 2,
@@ -367,7 +372,7 @@
     "current_candidate_commit": "tested/reviewed code candidate; not current checkout HEAD"
   },
   "frame006_round1": {
-    "status": "DIFF_REFERENCE_PROTOCOL_FIX",
+    "status": "ACCEPTED_WITH_LIMITS",
     "sdk_turn_budget": 3,
     "sdk_turns_reserved": 2,
     "model_policy": "config/model-policy.toml",
@@ -378,13 +383,27 @@
       "serial promotion CAS",
       "remote"
     ],
-    "candidate_code_commit": "40d4d5847a5ee71c47254b08442da62b2c522fe4",
+    "candidate_code_commit": "757932f40bbd3172601a5030e33d2a22fe170611",
     "regression": ".runtime/frame006-round1-frozen-regression.json",
     "bootstrap": ".runtime/frame006-round1-bootstrap-20261010-a26f.py",
     "exec_session": 59366,
     "sdk_turns_completed": 2,
     "live_task_id": "p-7bfc760188f34f35:addition",
     "live_candidate": "2a97196117f43ca2d3321dce1aae4f5427903175",
-    "fake_test_session": 63080
-  }
+    "fake_test_session": 63080,
+    "acceptance": "TASKS/FRAME-006-ROUND1-ACCEPTANCE.json",
+    "fixture_candidate": "2a97196117f43ca2d3321dce1aae4f5427903175",
+    "usage": {
+      "input_tokens": 157754,
+      "cached_input_tokens": 122752,
+      "output_tokens": 1273,
+      "total_tokens": 159027,
+      "reasoning_output_tokens": 192,
+      "uncached_input_tokens": 35002,
+      "duration_ms": 41662
+    },
+    "protocol_fix_reconciled_without_replay": true
+  },
+  "v03_local_controller_route_implemented": true,
+  "development_runtime_scope": "v0.3 round1 local engineering path in development worktree; full v0.3 promotion/recovery not complete"
 }

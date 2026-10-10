@@ -1,0 +1,94 @@
+{
+  "schema_version": "native-orchestrator.round1-evidence/1",
+  "candidate_code_commit": "757932f40bbd3172601a5030e33d2a22fe170611",
+  "initial_live_code_commit": "40d4d5847a5ee71c47254b08442da62b2c522fe4",
+  "fixture_candidate_commit": "2a97196117f43ca2d3321dce1aae4f5427903175",
+  "model_policy_sha256": "8749350fc3865e3808b497850f8a2947a804577274eb988ac0844b28a5dc5ea6",
+  "runtime_source_sha256": {
+    "orchestrator.py": "7e23325161060af4f09f53222ed325fa03081ba31607930a47e512e975304d34",
+    "repo_execution.py": "762e881bcf0f49485dc7f3b50b876aa4480c2bb344ae895c5730d5628f8939a3",
+    "model_policy.py": "6c6c1abb031cc4f79d4d8d6cfa377b0ff248daad75c972cd8daeb1533b2fdbf2",
+    "codex_sdk_adapter.py": "0d464d8e83d283a5a678167586fe2cdc8b5f409f5cc14473186188fce13c334f",
+    "run_tests.py": "6ef97dc5c212b1a87b1aedeba1956306c13f2f5a8d08a98fda62a232269e1739"
+  },
+  "artifacts": [
+    {
+      "path": "E:\\零碎\\native-orchestrator-v03\\.runtime\\frame006-round1-final-regression.json",
+      "sha256": "8cb8a83b5251081cefd84e8eccadfb03c83a0314f1ccea512abe1e79c99614f3",
+      "bytes": 7661
+    },
+    {
+      "path": "E:\\零碎\\native-orchestrator-v03\\.runtime\\frame006-round1-20261010-a26f\\report.json",
+      "sha256": "a30e2a48e6941b7e90326f7ec66b87aacadc03e632e87bc1a61bead49f8440ff",
+      "bytes": 3156
+    },
+    {
+      "path": "E:\\零碎\\native-orchestrator-v03\\.runtime\\frame006-round1-20261010-a26f\\report-reconciled.json",
+      "sha256": "1daf322083393a8bcb015f622728fc869ad107441a556f996ebb3ef19477cb8e",
+      "bytes": 3789
+    },
+    {
+      "path": "E:\\零碎\\native-orchestrator-v03\\.runtime\\frame006-round1-20261010-a26f\\controller-data\\projects\\p-7bfc760188f34f35\\addition\\1\\acceptance.json",
+      "sha256": "f7c2ca823637626420c13ac3f1c0d9c7874938dac98568ad74043b0c04552c11",
+      "bytes": 3039
+    },
+    {
+      "path": "E:\\零碎\\native-orchestrator-v03\\.runtime\\frame006-round1-20261010-a26f\\controller-data\\projects\\p-7bfc760188f34f35\\addition\\1\\spec.json",
+      "sha256": "24b2ad221d6ce2c6a56a439bd3e5dfcea09cc9f0786a45025b57b4b4f270667c",
+      "bytes": 1238
+    },
+    {
+      "path": "E:\\零碎\\native-orchestrator-v03\\.runtime\\frame006-round1-20261010-a26f\\controller-data\\projects\\p-7bfc760188f34f35\\addition\\1\\workspace.json",
+      "sha256": "4a022e7afad97143366503e53efd9a2ae5325d7472405556857642c612cea2cd",
+      "bytes": 400
+    },
+    {
+      "path": "E:\\零碎\\native-orchestrator-v03\\.runtime\\frame006-round1-20261010-a26f\\controller-data\\projects\\p-7bfc760188f34f35\\addition\\1\\candidate.json",
+      "sha256": "70d76b92786d3c44f052f442ebedd5def4083b7abd18ef2f16146592a6ed3f23",
+      "bytes": 662
+    },
+    {
+      "path": "E:\\零碎\\native-orchestrator-v03\\.runtime\\frame006-round1-20261010-a26f\\controller-data\\projects\\p-7bfc760188f34f35\\addition\\1\\checks.json",
+      "sha256": "9954b8030e3644e85cfbb6bcf5c0f8990d66cc338950968e28e9ecae97aead89",
+      "bytes": 2190
+    },
+    {
+      "path": "E:\\零碎\\native-orchestrator-v03\\.runtime\\frame006-round1-20261010-a26f\\controller-data\\projects\\p-7bfc760188f34f35\\addition\\1\\review-input.json",
+      "sha256": "1eccb07254022482f3ba451e54627088f79e1663dadcaa37bcdbbb2538868d93",
+      "bytes": 2464
+    },
+    {
+      "path": "E:\\零碎\\native-orchestrator-v03\\.runtime\\frame006-round1-20261010-a26f\\controller-data\\projects\\p-7bfc760188f34f35\\addition\\1\\review-read-receipts.json",
+      "sha256": "fb476012781f30fcaf555a88666f8ebb0bd4bf4f0284f40377201d21aed60104",
+      "bytes": 687
+    },
+    {
+      "path": "E:\\零碎\\native-orchestrator-v03\\.runtime\\frame006-round1-20261010-a26f\\controller-data\\projects\\p-7bfc760188f34f35\\addition\\1\\review.json",
+      "sha256": "af6bb24c7f0f7990cf11ed712c8edd3003dc609aea4a51163e070bcaa73212a1",
+      "bytes": 1240
+    },
+    {
+      "path": "E:\\零碎\\native-orchestrator-v03\\.runtime\\frame006-round1-20261010-a26f\\controller-data\\projects\\p-7bfc760188f34f35\\addition\\1\\executor-sdk.json",
+      "sha256": "602d6f6941a1f4de01e9539290f7479aae9e608b9e270548e806e90bc986b433",
+      "bytes": 6423
+    },
+    {
+      "path": "E:\\零碎\\native-orchestrator-v03\\.runtime\\frame006-round1-20261010-a26f\\controller-data\\projects\\p-7bfc760188f34f35\\addition\\1\\reviewer-sdk.json",
+      "sha256": "ecb9dfe96de58ad7a44332b441c8df3903761e19f3d0c64919cd45901cee27d2",
+      "bytes": 15833
+    },
+    {
+      "path": "E:\\零碎\\native-orchestrator-v03\\.runtime\\frame006-round1-20261010-a26f\\controller-data\\projects\\p-7bfc760188f34f35\\addition\\1\\review-input-before-diff-ref.json",
+      "sha256": "e317a0f3b699fd23553383c562268e69bf2359aee794cf979bc98e55f41f26d2",
+      "bytes": 2308
+    },
+    {
+      "path": "E:\\零碎\\native-orchestrator-v03\\.runtime\\frame006-round1-20261010-a26f\\controller-data\\projects\\p-7bfc760188f34f35\\addition\\1\\error.json",
+      "sha256": "3ac6f6c527fc886168e64df870901478e069e31ab093efb685281032372d640e",
+      "bytes": 61
+    }
+  ],
+  "unchanged_sdk_logs": true,
+  "protocol_correction": "diff is an explicit fifth exact read identity; complete native records revalidated through Controller, no replay",
+  "full_crash_recovery_matrix_verified": false
+}
