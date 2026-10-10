@@ -2,7 +2,7 @@
 
 目标见 PROJECT.md，协作/保护边界见 AGENTS.md。动态开发状态唯一权威：E:/零碎/native-orchestrator/DEVELOPMENT_STATE.json；开发树内为同步副本。运行调度唯一权威是对应数据目录 SQLite。
 
-唯一开发工作树 E:/零碎/native-orchestrator-v03；branch codex/engineering-v03。当前开发 HEAD 必须运行 git rev-parse HEAD（refs/heads/codex/engineering-v03）解析；冻结验收源码 379c21041887a11e11e2144a6f1e4402d300554a，最终文档 checkpoint 是其源码不变后继，最终字面 SHA 见审核包 GIT_STATE.txt。不要把源码候选当 checkout HEAD。
+唯一开发工作树 E:/零碎/native-orchestrator-v03；branch codex/engineering-v03。当前开发 HEAD 必须运行 git rev-parse HEAD（refs/heads/codex/engineering-v03）解析；冻结验收源码 379c21041887a11e11e2144a6f1e4402d300554a，正式已验收基线 004de591bd03127c61c502655b1a7668eea3413d；后续 Release Closure checkpoint 仅同步恢复文档。不要把源码候选或 stable tag 当 checkout HEAD。
 
 FRAME-006 FINAL ACCEPTED_WITH_LIMITS / V1_LOCAL_ENGINEERING_FINAL_ACCEPTED_WITH_LIMITS；验收 TASKS/FRAME-006-ROUND3-ACCEPTANCE.json。新对话持久恢复成功；真实生产 Controller Task→lease/budget/spec/attempt→SDK Executor→freeze→native checks→fresh readOnly Reviewer→proof→ACCEPTED→本地 promotion 闭环通过，各 candidate 身份精确一致。Round2 crash/冲突/CAS 回归通过。
 
@@ -13,3 +13,5 @@ proof/2记录SDK/runtime/model/effort/sandbox；proof/1、未知schema、缺字�
 限制：普通已有tracked UTF8文本、单独立任务、普通本地Git worktree。UNVERIFIED_WINDOWS_SYMLINK：5项OS symlink权限SKIP；实际junction及Git120000拒绝通过，普通非symlink工程不阻塞。保留data-live/业务/私有配置/旧验收/用户变更，不改ACL/helper/runtime，不盲stash/reset/clean。
 
 下一步：停止扩建框架，开始用于真实项目；GitHub remote / Codex managed worktree / Windows upstream sandbox 作为后续增强，不属于 V1 阻塞项。 无继续开发框架的活动票据。
+
+V1 stable tag：controller-v1.0.0-local → 004de591bd03127c61c502655b1a7668eea3413d。FRAME-006：FINAL ACCEPTED_WITH_LIMITS；framework construction：FROZEN；next phase：USE_ON_REAL_PROJECTS。只有真实项目暴露具体缺口时才新增功能。Release Closure：RELEASED_LOCAL_V1_MAIN_PROMOTION_DEFERRED；main 与已验收开发线分叉（共同祖先 810e4b766041f00e5d072c21b4b8e6f86135c69e），main 独有恢复文档提交，无法 ff-only；main 源码未晋升。无 remote push；本轮 SDK turns=0。

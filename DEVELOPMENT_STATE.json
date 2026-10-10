@@ -462,6 +462,22 @@
     "Legacy proof/1 and boundary-source upgrades need explicit reconciliation; no automatic migration or model replay",
     "ReadOnly active write denial proven with zero-turn SDK command/exec preset, adapter thread/turn mapping tested; no extra adversarial model turn"
   ],
+  "v1_stable_tag": "controller-v1.0.0-local",
+  "accepted_commit": "004de591bd03127c61c502655b1a7668eea3413d",
+  "frame006_final_status": "FINAL ACCEPTED_WITH_LIMITS",
+  "framework_construction": "FROZEN",
+  "next_phase": "USE_ON_REAL_PROJECTS",
+  "framework_expansion_policy": "不再主动扩建框架；只有真实项目暴露具体缺口时才新增功能。",
+  "release_closure": {
+    "status": "RELEASED_LOCAL_V1_MAIN_PROMOTION_DEFERRED",
+    "main_promotion": "MAIN_PROMOTION_DEFERRED",
+    "main_before_closure": "13588b1e09a4e3765f2b4afdab1b7f22d6690aa0",
+    "main_source_promoted": false,
+    "reason": "main is not an ancestor of accepted commit; main has nine documentation-only commits since common ancestor 810e4b766041f00e5d072c21b4b8e6f86135c69e; ff-only unavailable",
+    "unreviewed_source_found": false,
+    "sdk_turns": 0,
+    "remote_push": false
+  },
   "deferred_after_v1": [
     "GitHub remote/Actions",
     "Codex managed worktree integration",
