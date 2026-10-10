@@ -19,6 +19,39 @@ from repo_workspace import _git_environment, _git_argv, _inspect_repository
 
 KIND = 'repo_worktree_v03'
 ROOT = Path(__file__).resolve().parent
+PROOF_SCHEMA = 'repo-worktree-proof/2'
+
+
+def proof_compatibility(proof):
+    """Read known historical versions without manufacturing current evidence."""
+    if not isinstance(proof, dict) or not isinstance(proof.get('policy'), dict):
+        return 'NEEDS_RECONCILIATION: missing proof version'
+    kind = proof['policy'].get('kind')
+    if kind == 'repo-worktree-proof/1':
+        return 'NEEDS_RECONCILIATION: legacy proof/1 requires current boundary verification'
+    if kind != PROOF_SCHEMA or proof.get('schema_version') != PROOF_SCHEMA:
+        return 'NEEDS_RECONCILIATION: unknown or inconsistent proof version'
+    if proof.get('evidence_status') not in ('MOCK_VERIFIED', 'LIVE_VERIFIED'):
+        return 'NEEDS_RECONCILIATION: unknown evidence status'
+    roles = proof.get('role_runtime')
+    if not isinstance(roles, dict) or set(roles) != {'executor', 'reviewer'}:
+        return 'NEEDS_RECONCILIATION: missing role runtime evidence'
+    for role, sandbox in (('executor', 'workspace-write'), ('reviewer', 'read-only')):
+        record = roles[role]
+        if (not isinstance(record, dict) or set(record) != {'sdk_version', 'runtime_version', 'model', 'effort', 'sandbox'}
+                or any(not isinstance(record[k], str) or not record[k] for k in ('sdk_version', 'model', 'effort'))
+                or not (record['runtime_version'] is None or isinstance(record['runtime_version'], str) and record['runtime_version'])
+                or record['sandbox'] != sandbox):
+            return 'NEEDS_RECONCILIATION: incomplete role runtime evidence'
+        if proof['evidence_status'] == 'LIVE_VERIFIED' and not record['runtime_version']:
+            return 'NEEDS_RECONCILIATION: live proof requires recorded runtime versions'
+    return 'CURRENT'
+
+
+def role_runtime(record):
+    # All values come from the completed SDK record; never infer a legacy grant.
+    return {'sdk_version': record['sdk_version'], 'runtime_version': record['native_version'],
+            'model': record['model'], 'effort': record['effort'], 'sandbox': record['sandbox_requested']}
 
 
 def git(root, args, before=None):
@@ -264,7 +297,7 @@ def validate_review(result, binding, expected_refs):
 
 def proof_policy():
     from orchestrator import digest, Controller
-    return {'kind': 'repo-worktree-proof/1', 'module_sha256': digest(Path(__file__).read_bytes()),
+    return {'kind': PROOF_SCHEMA, 'module_sha256': digest(Path(__file__).read_bytes()),
         'sdk_adapter_sha256': digest((ROOT / 'codex_sdk_adapter.py').read_bytes()),
         'model_policy_reader_sha256': digest((ROOT / 'model_policy.py').read_bytes()),
         'promotion_sha256': digest((ROOT / 'repo_promotion.py').read_bytes()),
@@ -530,6 +563,9 @@ def finish_review(controller, task, reviewer):
     review_root = Path(meta['review_root'])
     checks = json.loads((directory/'checks.json').read_bytes())
     worker = json.loads((directory/'executor-sdk.json').read_bytes())
+    reviewer_record = json.loads((directory/'reviewer-sdk.json').read_bytes())
+    if worker.get('sandbox_requested') != 'workspace-write' or reviewer_record.get('sandbox_requested') != 'read-only':
+        raise ValueError('NEEDS_RECONCILIATION: role sandbox evidence missing or unsafe')
     expected = review_bytes(review_root, candidate, spec['base_commit'])
     hashes = {k:digest(v) for k,v in expected.items()}
     diff_ref = 'git:'+spec['base_commit']+'..'+candidate['candidate_commit']
@@ -564,7 +600,9 @@ def finish_review(controller, task, reviewer):
                 raise ValueError('NATIVE_CHECK_RECEIPT_CHANGED')
             for name in ('receipt.json','intent.json','input-manifest.json','stdout.txt','stderr.txt'):
                 check_files[check_id+'/'+root.name+'/'+name] = digest((root/name).read_bytes())
-    proof={'policy':proof_policy(),'binding':binding,'files':{name:digest((directory/name).read_bytes()) for name in names},
+    proof={'schema_version':PROOF_SCHEMA,'policy':proof_policy(),
+        'role_runtime':{'executor':role_runtime(worker),'reviewer':role_runtime(reviewer_record)},
+        'binding':binding,'files':{name:digest((directory/name).read_bytes()) for name in names},
         'check_files': check_files,
         'workspace':descriptor,'executor_session_id':worker['thread_id'],'reviewer_session_id':reviewer['thread_id'],
         'reviewer_model':reviewer['model'],'reviewer_effort':reviewer['effort'],
@@ -582,9 +620,14 @@ def verify_accepted(controller, task, with_evidence=False):
         if task['state'] != 'ACCEPTED' or not task['acceptance_proof']:
             raise ValueError('NO_REPO_PROOF')
         proof = json.loads(task['acceptance_proof'])
+        compatibility = proof_compatibility(proof)
+        if compatibility != 'CURRENT':
+            raise ValueError(compatibility)
         directory = controller.task_dir(task)
         spec = json.loads(task['spec'])
-        if proof['policy'] != proof_policy() or digest(proof) != task['acceptance_proof_hash'] or json.loads((directory/'acceptance.json').read_bytes()) != proof:
+        if proof['policy'] != proof_policy():
+            raise ValueError('NEEDS_RECONCILIATION: validator or boundary policy upgraded')
+        if digest(proof) != task['acceptance_proof_hash'] or json.loads((directory/'acceptance.json').read_bytes()) != proof:
             raise ValueError('REPO_PROOF_CHANGED')
         required = {'spec.json','workspace.json','candidate.json','checks.json','review-input.json','review-read-receipts.json','review.json','executor-sdk.json','reviewer-sdk.json'}
         if (directory/'integration.json').is_file():
@@ -650,6 +693,8 @@ def verify_accepted(controller, task, with_evidence=False):
             raise ValueError('REPO_REVIEWER_IDENTITY_CHANGED')
         for role, session in (('executor',task['session_id']),('reviewer',task['reviewer_id'])):
             record=evidence[role+'-sdk.json']
+            if proof['role_runtime'][role] != role_runtime(record):
+                raise ValueError('REPO_ROLE_RUNTIME_CHANGED')
             expected_route=spec['controller_model_policy']['routes'][role]
             if record['status']!='completed' or record['thread_id']!=session or record['model']!=expected_route['model'] or record['effort']!=expected_route['reasoning_effort']:
                 raise ValueError('REPO_SDK_ROLE_RECORD_CHANGED')

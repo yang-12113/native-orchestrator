@@ -53,6 +53,7 @@ class FakeSdk:
             diff=git(cwd,['diff','--no-ext-diff',payload['base_commit']+'..'+payload['candidate_commit']])
             items.append({'type':'commandExecution','command':'git diff '+payload['base_commit']+'..'+payload['candidate_commit'],'exit_code':0,'aggregated_output':diff})
         record={'status':'completed','sdk_version':'fake','native_version':None,'role':role,'model':model,'effort':effort,
+            'sandbox_requested':'workspace-write' if role=='executor' else 'read-only',
             'thread_id':sid,'turn_id':'turn-'+sid,'duration_ms':7,'activity_counts':{'commandExecution':len(items)},
             'usage':{'total':{'input_tokens':10,'cached_input_tokens':8,'output_tokens':2,'total_tokens':12}},
             'items':items,'final_response':json.dumps(payload)}

@@ -1080,12 +1080,12 @@ class Controller:
         for task in self.db.execute(query, (project,) if project else ()).fetchall():
             try:
                 self.verify_task_accepted(task, _cache=cache)
-            except (OSError, ValueError, KeyError, TypeError, AttributeError):
-                changed.append(task)
+            except (OSError, ValueError, KeyError, TypeError, AttributeError) as error:
+                changed.append((task, "NEEDS_RECONCILIATION" if "NEEDS_RECONCILIATION" in str(error) else "ACCEPTED_EVIDENCE_CHANGED"))
         invalidated = 0
         with self.immediate():
-            for task in changed:
-                invalidated += bool(self.decision(task, "ACCEPTED_EVIDENCE_CHANGED"))
+            for task, reason in changed:
+                invalidated += bool(self.decision(task, reason))
         return invalidated
 
     def resume_summary(self, project, decision_cursor=0, limit=10, state_version=None):
