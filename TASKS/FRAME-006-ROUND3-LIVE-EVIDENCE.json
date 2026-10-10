@@ -1,0 +1,120 @@
+{
+  "source_code_commit": "379c21041887a11e11e2144a6f1e4402d300554a",
+  "fresh_fixture": true,
+  "api": "Controller.submit/run_one/verify_task_accepted/promote_repo_task",
+  "remote_used": false,
+  "system_config_acl_runtime_modified": false,
+  "task_id": "p-8f59837e143c42e3:addition",
+  "state": "ACCEPTED",
+  "error_class": null,
+  "attempt": 1,
+  "status": "PASS",
+  "identities": {
+    "candidate": "397908a178bd3a2d27a996f60bd8fd1b68957d29",
+    "checks": "397908a178bd3a2d27a996f60bd8fd1b68957d29",
+    "review": "397908a178bd3a2d27a996f60bd8fd1b68957d29",
+    "acceptance": "397908a178bd3a2d27a996f60bd8fd1b68957d29",
+    "promotion": "397908a178bd3a2d27a996f60bd8fd1b68957d29",
+    "main": "397908a178bd3a2d27a996f60bd8fd1b68957d29"
+  },
+  "candidate_tree_hash": "e02f5b85acf0f8356f2a325324d577f54a4fb8b9",
+  "acceptance_receipt": "E:\\零碎\\native-orchestrator-v03\\.runtime\\frame006-round3-live-20261010\\controller-data\\projects\\p-8f59837e143c42e3\\addition\\1\\acceptance.json",
+  "proof_hash": "c3db151d7e4417d277df00d02c4ffce392fbb7bdb175a4baffbef0d11379a88c",
+  "role_runtime": {
+    "executor": {
+      "sdk_version": "0.162.0",
+      "runtime_version": "0.162.0",
+      "model": "gpt-6-luna",
+      "effort": "high",
+      "sandbox": "workspace-write"
+    },
+    "reviewer": {
+      "sdk_version": "0.162.0",
+      "runtime_version": "0.162.0",
+      "model": "gpt-6.1-sol",
+      "effort": "high",
+      "sandbox": "read-only"
+    }
+  },
+  "proof_schema": "repo-worktree-proof/2",
+  "evidence_status": "LIVE_VERIFIED",
+  "fresh_reviewer": true,
+  "fixture_main_clean": true,
+  "source_unchanged": true,
+  "reserved_model_turns": 2,
+  "completed_model_turns": 2,
+  "model_policy_sha256": "8749350fc3865e3808b497850f8a2947a804577274eb988ac0844b28a5dc5ea6",
+  "roles": [
+    {
+      "role": "executor",
+      "model": "gpt-6-luna",
+      "usage": {
+        "last": {
+          "cache_write_input_tokens": 0,
+          "cached_input_tokens": 14080,
+          "input_tokens": 14653,
+          "output_tokens": 60,
+          "reasoning_output_tokens": 25,
+          "total_tokens": 14713
+        },
+        "model_context_window": 828400,
+        "total": {
+          "cache_write_input_tokens": 0,
+          "cached_input_tokens": 41216,
+          "input_tokens": 57625,
+          "output_tokens": 363,
+          "reasoning_output_tokens": 155,
+          "total_tokens": 57988
+        },
+        "model": "gpt-6-luna",
+        "effort": "high",
+        "duration_ms": 13338,
+        "activity_counts": {
+          "agentMessage": 2,
+          "fileChange": 1,
+          "commandExecution": 2,
+          "reasoning": 4,
+          "userMessage": 1
+        },
+        "sdk_version": "0.162.0",
+        "native_version": "0.162.0",
+        "turn_id": "01a123a8-276e-79e2-93ad-6cb50f6b63f8"
+      }
+    },
+    {
+      "role": "reviewer",
+      "model": "gpt-6.1-sol",
+      "usage": {
+        "last": {
+          "cache_write_input_tokens": 0,
+          "cached_input_tokens": 15744,
+          "input_tokens": 16348,
+          "output_tokens": 562,
+          "reasoning_output_tokens": 69,
+          "total_tokens": 16910
+        },
+        "model_context_window": 828400,
+        "total": {
+          "cache_write_input_tokens": 0,
+          "cached_input_tokens": 60544,
+          "input_tokens": 93756,
+          "output_tokens": 895,
+          "reasoning_output_tokens": 69,
+          "total_tokens": 94651
+        },
+        "model": "gpt-6.1-sol",
+        "effort": "high",
+        "duration_ms": 30812,
+        "activity_counts": {
+          "agentMessage": 2,
+          "commandExecution": 5,
+          "reasoning": 1,
+          "userMessage": 1
+        },
+        "sdk_version": "0.162.0",
+        "native_version": "0.162.0",
+        "turn_id": "01a123a8-6fd6-7381-ba75-ac9e608aec89"
+      }
+    }
+  ]
+}

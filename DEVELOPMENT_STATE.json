@@ -5,15 +5,15 @@
   "timezone": "Asia/Shanghai",
   "maintained_by": "root",
   "objective": "实现受限自动工程执行闭环，并通过真实工程与恢复验收",
-  "runtime_version": "0.2.1",
-  "runtime_overall_status": "PARTIAL_LOCAL_ENGINEERING_ONLY",
-  "v03_runtime_implemented": false,
+  "runtime_version": "0.3-local-controller",
+  "runtime_overall_status": "V1_LOCAL_ENGINEERING_ACCEPTED_WITH_LIMITS",
+  "v03_runtime_implemented": true,
   "baseline_code_commit": "b97788f0c7f3318874765c0fcd664d4bc05e80ed",
   "baseline_tag": "controller-v0.2.1-verified",
   "baseline_regression_tests": 59,
-  "current_phase": "FRAME_006_ROUND2_ACCEPTED",
+  "current_phase": "FRAME_006_FINAL_ACCEPTED_WITH_LIMITS",
   "current_task": "FRAME-006",
-  "next_action": "Round2 ACCEPTED using fake SDK/real local Git/SQLite/fault injection; 29 new tests, 211 total, 206 PASS/0 FAIL/0 ERROR/5 existing SKIP, real turns 0. Prepare final Round3 ticket for final real engineering validation/read-only boundary and existing runtime proof compatibility; no replay of prior live fixtures, no remote/system changes.",
+  "next_action": "停止扩建框架，开始用于真实项目；GitHub remote / Codex managed worktree / Windows upstream sandbox 作为后续增强，不属于 V1 阻塞项。",
   "code_worktree": "E:\\零碎\\native-orchestrator-v03",
   "code_branch": "codex/engineering-v03",
   "resume_files": [
@@ -21,8 +21,7 @@
     "PROJECT.md",
     "MAINLINE.md",
     "DEVELOPMENT_STATE.json",
-    "TASKS/FRAME-006-ROUND2.md",
-    "TASKS/FRAME-006-ROUND2-ACCEPTANCE.json"
+    "TASKS/FRAME-006-ROUND3-ACCEPTANCE.json"
   ],
   "completed": [
     {
@@ -150,16 +149,16 @@
     {
       "id": "FRAME-006",
       "owner": "root integration; fresh Sol High native quality review",
-      "status": "ROUND2_ACCEPTED_ROUND3_PENDING",
+      "status": "FINAL_ACCEPTED_WITH_LIMITS",
       "dependencies": [
         "FRAME-005"
       ],
-      "ticket": "TASKS/FRAME-006-ROUND2.md"
+      "ticket": "TASKS/FRAME-006-ROUND3.md"
     },
     {
       "id": "FRAME-007",
       "owner": "root persistence / Luna fault tests",
-      "status": "PLANNED",
+      "status": "DEFERRED_AFTER_V1_NO_ACTIVE_FRAMEWORK_EXPANSION",
       "dependencies": [
         "FRAME-006"
       ]
@@ -167,7 +166,7 @@
     {
       "id": "FRAME-008",
       "owner": "root / Luna interface tests",
-      "status": "PLANNED",
+      "status": "DEFERRED_AFTER_V1_NO_ACTIVE_FRAMEWORK_EXPANSION",
       "dependencies": [
         "FRAME-007"
       ]
@@ -175,7 +174,7 @@
     {
       "id": "FRAME-009",
       "owner": "root / Luna migration fixtures",
-      "status": "PLANNED",
+      "status": "DEFERRED_AFTER_V1_NO_ACTIVE_FRAMEWORK_EXPANSION",
       "dependencies": [
         "FRAME-008"
       ]
@@ -183,7 +182,7 @@
     {
       "id": "FRAME-010",
       "owner": "root / Luna validation / independent review",
-      "status": "PLANNED",
+      "status": "DEFERRED_AFTER_V1_NO_ACTIVE_FRAMEWORK_EXPANSION",
       "dependencies": [
         "FRAME-007",
         "FRAME-008"
@@ -193,7 +192,7 @@
     {
       "id": "FRAME-011",
       "owner": "root / Luna documentation checks",
-      "status": "PLANNED",
+      "status": "DEFERRED_AFTER_V1_NO_ACTIVE_FRAMEWORK_EXPANSION",
       "dependencies": [
         "FRAME-010"
       ],
@@ -207,9 +206,9 @@
   ],
   "gates": {
     "G1": "PASS_RESTRICTED_WINDOWS",
-    "G2": "CONTROLLER_ROUND2_LOCAL_RECOVERY_PROMOTION_ACCEPTED_FINAL_ROUND3_PENDING",
-    "G3": "NOT_STARTED",
-    "G4": "NOT_STARTED"
+    "G2": "PASS_V1_LOCAL_ENGINEERING_WITH_WINDOWS_SYMLINK_LIMITS",
+    "G3": "DEFERRED_REAL_PROJECT_ADOPTION_NOT_V1_BLOCKING",
+    "G4": "DEFERRED_BROADER_USE_VALIDATION_NOT_V1_BLOCKING"
   },
   "pending_decisions": [],
   "active_delegations": [],
@@ -246,20 +245,20 @@
     "not_deadline": true,
     "not_background_execution_promise": true
   },
-  "validated_code_candidate_commit": "bda744b4074309dcc02f67da5522f22a3d8942cb",
+  "validated_code_candidate_commit": "379c21041887a11e11e2144a6f1e4402d300554a",
   "baseline_binding_evidence": "TASKS/PLAN-BASELINE-BINDING.json",
   "plan_candidate_commit": "13360a9",
   "authoritative_development_state": "E:\\零碎\\native-orchestrator\\DEVELOPMENT_STATE.json",
-  "current_candidate_commit": "26df688545b3811cef293fa9950281f8ec0124a6",
+  "current_candidate_commit": "379c21041887a11e11e2144a6f1e4402d300554a",
   "latest_checks": {
-    "candidate_commit": "26df688545b3811cef293fa9950281f8ec0124a6",
-    "tests_run": 211,
-    "passed": 206,
-    "failed": 0,
+    "candidate_commit": "379c21041887a11e11e2144a6f1e4402d300554a",
+    "run": 228,
+    "passed": 223,
+    "failures": 0,
     "errors": 0,
     "skipped": 5,
-    "native_model_turns": 0,
-    "evidence": "TASKS/FRAME-006-ROUND2-EVIDENCE-BINDING.json",
+    "native_model_turns": 2,
+    "evidence": "TASKS/FRAME-006-ROUND3-EVIDENCE-BINDING.json",
     "source_unchanged": true
   },
   "collaboration_files": {
@@ -344,13 +343,13 @@
     }
   },
   "unverified_boundaries": [
-    "real OS file/directory symlink behavior; legacy tests skipped WinError1314"
+    "UNVERIFIED_WINDOWS_SYMLINK: OS file/directory symlink cases remain WinError1314 SKIP"
   ],
   "frame005_status": {
     "materials": "ACCEPTED_FAKE_API_ONLY",
     "native_role": "NATIVE_SDK_FIXTURE_VERIFIED_ONLY",
     "proposal_binding": "DEFERRED_QUARANTINE",
-    "production_route": "CONTROLLER_LOCAL_ROUTE_ROUND1_WIRED_DEVELOPMENT_BRANCH",
+    "production_route": "V1_LOCAL_CONTROLLER_E2E_PROMOTION_ACCEPTED_WITH_LIMITS",
     "live_proposal_model_turns": 0,
     "default_route": "OFFICIAL_SDK_DIRECT_WORKTREE",
     "live_direct_model_turns": 2,
@@ -363,8 +362,9 @@
     "probe": "E:\\零碎\\native-orchestrator-v03\\.runtime\\sdk-capability-20261010-52a7\\report-attempt2.json",
     "status": "NATIVE_DIRECT_EDIT_AND_FRESH_REVIEW_FIXTURE_VERIFIED",
     "model_turns": 2,
-    "actual_filesystem_permissions": "executor_write_observed; reviewer_policy_readonly_and_no_writes_observed; active_write_denial_not_probed",
-    "pilot_acceptance": "TASKS/FRAME-005-SDK-PILOT-ACCEPTANCE.json"
+    "actual_filesystem_permissions": "executor_write_observed; fresh reviewer readOnly mapping verified; zero-turn runtime create/modify PermissionError verified",
+    "pilot_acceptance": "TASKS/FRAME-005-SDK-PILOT-ACCEPTANCE.json",
+    "final_acceptance": "TASKS/FRAME-006-ROUND3-ACCEPTANCE.json"
   },
   "plan_revision": {
     "external_package_date": "2026-10-09",
@@ -373,9 +373,9 @@
     "source_snapshot_commit": "ea73c49ab1e5d413ff85cb79935502d3ef1df1c0"
   },
   "git_checkpoint_semantics": {
-    "startup_verified_development_head": "e78c72142334ec9dcf509b38b35dae84f45297db",
-    "startup_main_head": "ec93fb51246f711d169f2aeb2df3a151c39969ae",
-    "actual_current_head": "resolve with git rev-parse HEAD",
+    "startup_verified_development_head": "41fd7acaf7569d5e18c96be4f7edd614db34f28a",
+    "startup_main_head": "353f9d4d06e5d133b8fdb80b6f14a2692a64dde6",
+    "actual_current_head": "resolve development HEAD with git rev-parse HEAD; package GIT_STATE records final literal SHA",
     "current_candidate_commit": "tested/reviewed code candidate; not current checkout HEAD"
   },
   "frame006_round1": {
@@ -412,7 +412,7 @@
     "protocol_fix_reconciled_without_replay": true
   },
   "v03_local_controller_route_implemented": true,
-  "development_runtime_scope": "v0.3 local Controller with Round2 receipt reconciliation and journaled serial promotion/CAS verified in development branch; final real engineering/permission boundaries remain Round3",
+  "development_runtime_scope": "V1 local production Controller route accepted on disposable real SDK fixture with promotion; source development worktree only, no deployment",
   "frame006_round2": {
     "status": "ACCEPTED",
     "startup_development_head": "c64b7ce02e551ac3ca9f565be74f6be7b32086d7",
@@ -423,10 +423,49 @@
     "acceptance": "TASKS/FRAME-006-ROUND2-ACCEPTANCE.json",
     "regression": ".runtime/frame006-round2-working-regression.json",
     "evidence_binding": "TASKS/FRAME-006-ROUND2-EVIDENCE-BINDING.json",
-    "round3_remaining": [
-      "Final real engineering end-to-end validation of the integrated Controller path under separately specified model budget",
-      "Actual adversarial Reviewer write-denial and OS symlink boundary verification; current skipped cases must not become PASS by declaration",
-      "Explicit compatibility/reconciliation validation for previously accepted runtime data after proof-policy/code upgrade; original data-live remains untouched"
-    ]
-  }
+    "round3_remaining": []
+  },
+  "accepted_framework_stage": "V1_LOCAL_ENGINEERING_FINAL_ACCEPTED_WITH_LIMITS",
+  "development_head_ref": "refs/heads/codex/engineering-v03",
+  "development_head_resolution": "git -C E:/零碎/native-orchestrator-v03 rev-parse HEAD",
+  "current_model_policy": "E:/零碎/native-orchestrator-v03/config/model-policy.toml",
+  "frame006_round3": {
+    "status": "ACCEPTED_WITH_LIMITS",
+    "acceptance": "TASKS/FRAME-006-ROUND3-ACCEPTANCE.json",
+    "candidate_code_commit": "379c21041887a11e11e2144a6f1e4402d300554a",
+    "fresh_persistent_recovery": true,
+    "live_sdk_turns": 2,
+    "usage": {
+      "cache_write_input_tokens": 0,
+      "cached_input_tokens": 101760,
+      "input_tokens": 151381,
+      "output_tokens": 1258,
+      "reasoning_output_tokens": 224,
+      "total_tokens": 152639,
+      "duration_ms": 44150,
+      "uncached_input_tokens": 49621
+    },
+    "fixture_candidate": "397908a178bd3a2d27a996f60bd8fd1b68957d29",
+    "production_controller_e2e": "PASS",
+    "check_runtime_versions": [
+      "0.162.0-alpha.2"
+    ],
+    "proof_schema": "repo-worktree-proof/2",
+    "reviewer_readonly": "PASS_RUNTIME_WRITE_DENIAL_ZERO_TURN",
+    "runtime_proof_compatibility": "PASS",
+    "windows_symlink": "UNVERIFIED_WINDOWS_SYMLINK"
+  },
+  "known_limits": [
+    "UNVERIFIED_WINDOWS_SYMLINK: five real OS symlink cases require unavailable WinError1314 privilege; real junction/Git120000 cases pass",
+    "V1 single independent ordinary tracked UTF8 text task; no binary/delete/rename/submodule or dependency graph",
+    "Local ordinary Git worktrees only; no remote, managed-worktree integration or production deployment",
+    "Legacy proof/1 and boundary-source upgrades need explicit reconciliation; no automatic migration or model replay",
+    "ReadOnly active write denial proven with zero-turn SDK command/exec preset, adapter thread/turn mapping tested; no extra adversarial model turn"
+  ],
+  "deferred_after_v1": [
+    "GitHub remote/Actions",
+    "Codex managed worktree integration",
+    "Windows upstream sandbox and privileged OS symlink support",
+    "UI/DAG/swarm/rebase/update daemon/deployment and broader task modes"
+  ]
 }

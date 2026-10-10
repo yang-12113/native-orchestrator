@@ -1,3 +1,7 @@
+# FRAME-006 FINAL ACCEPTED_WITH_LIMITS
+
+最终当前状态见 FRAME-006-ROUND3-ACCEPTANCE.json；当前恢复入口 MAINLINE.md。框架开发结束，开始用于真实项目。以下为 Round1 的历史范围，不是当前待办。
+
 # FRAME-006 ROUND-1：SDK direct-worktree 接入现有 Controller
 
 用户本轮完整请求来自 attachments/f02876f4-830e-4f49-8bf5-4277210fbe1c/已粘贴的文本.txt；它取代此前“下一票据未实施/沿用上一轮预算”的说明。

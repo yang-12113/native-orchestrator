@@ -1,0 +1,71 @@
+{
+  "schema_version": "repo-worktree-proof/2",
+  "policy": {
+    "kind": "repo-worktree-proof/2",
+    "module_sha256": "7b1a53220a18a3c858f76ece198c83ddf6544e7d9bbe477db63443ba3d028f43",
+    "sdk_adapter_sha256": "0d464d8e83d283a5a678167586fe2cdc8b5f409f5cc14473186188fce13c334f",
+    "model_policy_reader_sha256": "6c6c1abb031cc4f79d4d8d6cfa377b0ff248daad75c972cd8daeb1533b2fdbf2",
+    "promotion_sha256": "1248668c06e2728327df99a00ef1beb9e075fb9892553f3e34558ab7f3d0958d",
+    "controller_wiring_sha256": "793644f74e511a52f48a28f7b0f93e5d27e87febe67fa1b476dc5baa6301f5d9"
+  },
+  "role_runtime": {
+    "executor": {
+      "sdk_version": "0.162.0",
+      "runtime_version": "0.162.0",
+      "model": "gpt-6-luna",
+      "effort": "high",
+      "sandbox": "workspace-write"
+    },
+    "reviewer": {
+      "sdk_version": "0.162.0",
+      "runtime_version": "0.162.0",
+      "model": "gpt-6.1-sol",
+      "effort": "high",
+      "sandbox": "read-only"
+    }
+  },
+  "binding": {
+    "task_id": "p-8f59837e143c42e3:addition",
+    "spec_version": 1,
+    "attempt": 1,
+    "spec_sha256": "e512ad73ef21d58e350067816b85b833ca3c45aabf61d0f556412cc8c1706010",
+    "base_commit": "35dfeaca9671613b5322858911e43ceb1e40c3a5",
+    "candidate_commit": "397908a178bd3a2d27a996f60bd8fd1b68957d29",
+    "candidate_tree_hash": "e02f5b85acf0f8356f2a325324d577f54a4fb8b9",
+    "manifest_hash": "8dd860e6b936dff52276ba890a789f26c5b6ece4aefb225beabced8b71941aaf",
+    "changed_paths_hash": "096fdfa9b98728a19f2cee8624f296e8766e03dfcfe33a0dcbc82fb183168229",
+    "model_policy_sha256": "8749350fc3865e3808b497850f8a2947a804577274eb988ac0844b28a5dc5ea6",
+    "check_catalog_hash": "53ca6c118e63e169de4a1cd124ff6c2a896b2eb67abb68f3c4f5f33238ae7abc",
+    "check_receipt_hash": "25aff6441c8b8d2e85332529593505740e64d2f220618decb38fef5a9a96611f"
+  },
+  "files": {
+    "spec.json": "e512ad73ef21d58e350067816b85b833ca3c45aabf61d0f556412cc8c1706010",
+    "workspace.json": "074dd690a1ff62fb2e07456f29236b4bfbb63cb7b1d9522aba801458a25c09a8",
+    "candidate.json": "c6adff858cc96b9a1bf8a4880ca5965bb970ffe2a9eaafbee6201bccc42df8a8",
+    "checks.json": "25aff6441c8b8d2e85332529593505740e64d2f220618decb38fef5a9a96611f",
+    "review-input.json": "ce62089119be6eb52827fb087ebfeb41097732fb755a1dd837512ebb318e280a",
+    "review-read-receipts.json": "71130d7a13ffa9f0a9458b0c537900d77f7f555eb65cfab830f7602e1e9770ab",
+    "review.json": "65af761ac69ecc269dc335e385587aab9360e081fee732fbe66ab156832e5802",
+    "executor-sdk.json": "101a297085fae69aabfae01be2ebfd6c1071d0a6a51e37a4f66bd049dd153a73",
+    "reviewer-sdk.json": "924533c713d9d7269284e3cda639e030581a7e50bb945d6ff6e546e93a2802dd"
+  },
+  "check_files": {
+    "unit/443267d326cb4a5391adb88d34ce41ae/receipt.json": "953edaf3b4279b777789552055852dbeaf6b6171c17c1afdeebc57dd124b31de",
+    "unit/443267d326cb4a5391adb88d34ce41ae/intent.json": "7ce96bce84e574e6c80b53950289c9fd520d0c9a7cbd87d753b8cc78825655ed",
+    "unit/443267d326cb4a5391adb88d34ce41ae/input-manifest.json": "0274784e0af45a9839ed85e740a56774ce5e9434b4f416404ae771d80a141a10",
+    "unit/443267d326cb4a5391adb88d34ce41ae/stdout.txt": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "unit/443267d326cb4a5391adb88d34ce41ae/stderr.txt": "60064b4f23271bfc6ef297a0a2b9ce9a54ca1c96a2f3c131e53b17056406637c"
+  },
+  "workspace": {
+    "branch": "orchestrator/p-8f59837e143c42e3-addition-a1",
+    "path": "E:\\零碎\\native-orchestrator-v03\\.runtime\\frame006-round3-live-20261010\\controller-data\\worktrees\\p-8f59837e143c42e3-addition\\1",
+    "start_commit": "35dfeaca9671613b5322858911e43ceb1e40c3a5",
+    "base_commit": "35dfeaca9671613b5322858911e43ceb1e40c3a5",
+    "git_link_hash": "a8d5cc3202fc831a43290ae25677b7a768224d9d93a4b90532a98eec7981b218"
+  },
+  "executor_session_id": "01a123a8-25ff-7242-a064-451f73c1a3e9",
+  "reviewer_session_id": "01a123a8-6ee7-76c3-9040-9a056f40fc1a",
+  "reviewer_model": "gpt-6.1-sol",
+  "reviewer_effort": "high",
+  "evidence_status": "LIVE_VERIFIED"
+}

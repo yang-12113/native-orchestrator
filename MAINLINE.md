@@ -1,15 +1,15 @@
 # 主线恢复入口
 
-目标见PROJECT，阶段/依赖见ENGINEERING_PLAN修订2，确认选择见DECISIONS。动态phase/证据/下一动作唯一读取 E:/零碎/native-orchestrator/DEVELOPMENT_STATE.json；本文件不维护第二份进度。
+目标见 PROJECT.md，协作/保护边界见 AGENTS.md。动态开发状态唯一权威：E:/零碎/native-orchestrator/DEVELOPMENT_STATE.json；开发树内为同步副本。运行调度唯一权威是对应数据目录 SQLite。
 
-用户外部包对账已修订默认路线为 SDK direct-worktree，先FRAME005小fixture；材料/proposal保留为特殊隔离，不扩旧DSL。对账及预算见 TASKS/PLAN-RECONCILIATION-20261010.md，精确范围见TASKS/FRAME-005.md。
+唯一开发工作树 E:/零碎/native-orchestrator-v03；branch codex/engineering-v03。当前开发 HEAD 必须运行 git rev-parse HEAD（refs/heads/codex/engineering-v03）解析；冻结验收源码 379c21041887a11e11e2144a6f1e4402d300554a，最终文档 checkpoint 是其源码不变后继，最终字面 SHA 见审核包 GIT_STATE.txt。不要把源码候选当 checkout HEAD。
 
-恢复AGENTS→PROJECT→本入口→权威开发状态→当前票据→git status/HEAD/worktree/必要源码。文档PASS不替代commit与报告SHA，零模型参数probe不当实际权限PASS。
+FRAME-006 FINAL ACCEPTED_WITH_LIMITS / V1_LOCAL_ENGINEERING_FINAL_ACCEPTED_WITH_LIMITS；验收 TASKS/FRAME-006-ROUND3-ACCEPTANCE.json。新对话持久恢复成功；真实生产 Controller Task→lease/budget/spec/attempt→SDK Executor→freeze→native checks→fresh readOnly Reviewer→proof→ACCEPTED→本地 promotion 闭环通过，各 candidate 身份精确一致。Round2 crash/冲突/CAS 回归通过。
 
-稳定目录 E:/零碎/native-orchestrator，开发 E:/零碎/native-orchestrator-v03、codex/engineering-v03。保留controller-v0.2.1-verified、engineering-g1-windows-verified与材料历史接纳；CLI worktree不同于managed列表。
+模型唯一源 config/model-policy.toml：Executor GPT-6 Luna/high，Reviewer/Escalation GPT-6.1 Sol/high，禁止降级。本轮真实 SDK turns=2；冻结回归 228：223 PASS / 0 FAIL / 0 ERROR / 5 SKIP。Reviewer 实际写拒绝由零turn同runtime readOnly command/exec 验证；Controller 拒绝 candidate/review 输入改变。
 
-保护业务/data-live/私有配置/旧ACCEPTANCE/用户变更；不自动stash/reset/清理、不改ACL/runtime/helper、不加付费路线。真实remote push/凭据/生产操作另确认。未知派发先对账，不重放；默认无额外subagent，root独占主线与接纳。Git管代码、SQLite管运行、开发JSON管阶段、CURRENT最多投影。
+proof/2记录SDK/runtime/model/effort/sandbox；proof/1、未知schema、缺字段或边界代码升级需 NEEDS_RECONCILIATION，不补默认、不自动重放。安装runtime版本改变本身不使旧candidate失效。
 
-当前任务入口为TASKS/FRAME-006-ROUND2.md；接纳见TASKS/FRAME-006-ROUND2-ACCEPTANCE.json。本轮启动Git实查c64b7ce；current_candidate_commit是与测试源码哈希精确绑定的冻结候选，不能当checkout HEAD。
+限制：普通已有tracked UTF8文本、单独立任务、普通本地Git worktree。UNVERIFIED_WINDOWS_SYMLINK：5项OS symlink权限SKIP；实际junction及Git120000拒绝通过，普通非symlink工程不阻塞。保留data-live/业务/私有配置/旧验收/用户变更，不改ACL/helper/runtime，不盲stash/reset/clean。
 
-FRAME006 ROUND2本地恢复/并发冲突/串行promotion CAS已接纳：新增29测试，总211（206 PASS、0 FAIL、0 ERROR、5既有OS symlink SKIP），真实SDK/model turn=0。代码候选26df688；50个测试源码文件哈希与冻结Git blob一致，见EVIDENCE-BINDING。A/未知派发安全待决策，B–E确定性对账；不猜测、重放或reset。最终真实工程、Reviewer写入拒绝、OS symlink及旧runtime proof兼容仍待ROUND3，原data-live不触碰。
+下一步：停止扩建框架，开始用于真实项目；GitHub remote / Codex managed worktree / Windows upstream sandbox 作为后续增强，不属于 V1 阻塞项。 无继续开发框架的活动票据。

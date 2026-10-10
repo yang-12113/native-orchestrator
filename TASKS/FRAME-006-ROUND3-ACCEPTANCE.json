@@ -1,0 +1,147 @@
+{
+  "schema_version": "native-orchestrator.round-acceptance/0.3",
+  "task_id": "FRAME-006-ROUND-3",
+  "status": "ACCEPTED_WITH_LIMITS",
+  "framework_stage": "V1_LOCAL_ENGINEERING_FINAL_ACCEPTED_WITH_LIMITS",
+  "accepted_on": "2026-10-10",
+  "startup_development_head": "41fd7acaf7569d5e18c96be4f7edd614db34f28a",
+  "candidate_code_commit": "379c21041887a11e11e2144a6f1e4402d300554a",
+  "current_development_head_resolution": "git rev-parse refs/heads/codex/engineering-v03; final documentation checkpoint is a descendant with identical tested source",
+  "branch": "codex/engineering-v03",
+  "fresh_persistent_recovery": true,
+  "round1_status": "ACCEPTED_WITH_LIMITS",
+  "round2_status": "ACCEPTED",
+  "production_controller_e2e": "PASS",
+  "check_runtime_versions": [
+    "0.162.0-alpha.2"
+  ],
+  "proof_schema": "repo-worktree-proof/2",
+  "role_runtime": {
+    "executor": {
+      "sdk_version": "0.162.0",
+      "runtime_version": "0.162.0",
+      "model": "gpt-6-luna",
+      "effort": "high",
+      "sandbox": "workspace-write"
+    },
+    "reviewer": {
+      "sdk_version": "0.162.0",
+      "runtime_version": "0.162.0",
+      "model": "gpt-6.1-sol",
+      "effort": "high",
+      "sandbox": "read-only"
+    }
+  },
+  "model_policy": "config/model-policy.toml",
+  "model_policy_sha256": "8749350fc3865e3808b497850f8a2947a804577274eb988ac0844b28a5dc5ea6",
+  "live_sdk_turns": 2,
+  "new_tests": 17,
+  "target_turns": 2,
+  "hard_budget": 3,
+  "third_turn_used": false,
+  "repairs": 0,
+  "usage": {
+    "cache_write_input_tokens": 0,
+    "cached_input_tokens": 101760,
+    "input_tokens": 151381,
+    "output_tokens": 1258,
+    "reasoning_output_tokens": 224,
+    "total_tokens": 152639,
+    "duration_ms": 44150,
+    "uncached_input_tokens": 49621
+  },
+  "regression": {
+    "run": 228,
+    "passed": 223,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 5
+  },
+  "candidate_identities": {
+    "candidate": "397908a178bd3a2d27a996f60bd8fd1b68957d29",
+    "checks": "397908a178bd3a2d27a996f60bd8fd1b68957d29",
+    "review": "397908a178bd3a2d27a996f60bd8fd1b68957d29",
+    "acceptance": "397908a178bd3a2d27a996f60bd8fd1b68957d29",
+    "promotion": "397908a178bd3a2d27a996f60bd8fd1b68957d29",
+    "main": "397908a178bd3a2d27a996f60bd8fd1b68957d29"
+  },
+  "candidate_tree_hash": "e02f5b85acf0f8356f2a325324d577f54a4fb8b9",
+  "runtime_acceptance_receipt": "E:\\零碎\\native-orchestrator-v03\\.runtime\\frame006-round3-live-20261010\\controller-data\\projects\\p-8f59837e143c42e3\\addition\\1\\acceptance.json",
+  "evidence_status": "LIVE_VERIFIED",
+  "reviewer_readonly": "PASS: fresh independent SDK context, readOnly thread/turn with deny-all; actual runtime read succeeds, create/modify PermissionError; hostile mutations/output rejected by Controller",
+  "runtime_proof_compatibility": "PASS: proof/1 recognized but cannot pass current standard; unknown/missing versions/fields rejected; policy source changes reconcile; installing runtime alone preserves historical identity/provenance",
+  "windows_symlink": "UNVERIFIED_WINDOWS_SYMLINK",
+  "windows_junction_and_git_120000": "PASS",
+  "windows_verified_cases": [
+    "junction repo root and parent",
+    "junction workspace source",
+    "junction data root parent",
+    "junction snapshot root and parent",
+    "junction native helper cwd",
+    "nested junction manifest",
+    "committed Git symlink mode 120000 with core.symlinks=false"
+  ],
+  "windows_unverified_cases": [
+    {
+      "test": "test_symbolic_link_paths_are_rejected (test_execution_contract.ExecutionContractPreflightTests.test_symbolic_link_paths_are_rejected)",
+      "reason": "symlink creation unavailable in isolated worktree: [WinError 1314] 客户端没有所需的特权。: 'E:\\\\零碎\\\\native-orchestrator-v03\\\\.runtime\\\\frame-002-tests\\\\case-_w5dew8g\\\\repo\\\\calculator.py' -> 'E:\\\\零碎\\\\native-orchestrator-v03\\\\.runtime\\\\frame-002-tests\\\\case-_w5dew8g\\\\repo\\\\linked.py'"
+    },
+    {
+      "test": "test_source_data_and_workspace_parent_symlinks_are_rejected_when_os_supports_links (test_repo_workspace.RepoWorkspaceTests.test_source_data_and_workspace_parent_symlinks_are_rejected_when_os_supports_links)",
+      "reason": "OS symlink creation unavailable; no OS-link proof: [WinError 1314] 客户端没有所需的特权。: 'E:\\\\零碎\\\\native-orchestrator-v03\\\\.runtime\\\\frame-003-test-82c46138addc49d8a17e745dbde0dba7\\\\c15-1eadaa\\\\source' -> 'E:\\\\零碎\\\\native-orchestrator-v03\\\\.runtime\\\\frame-003-test-82c46138addc49d8a17e745dbde0dba7\\\\c15-1eadaa\\\\source-link'"
+    },
+    {
+      "test": "test_symlink_targets_and_symlinked_components_are_rejected_when_os_supports_links (test_repo_workspace.RepoWorkspaceTests.test_symlink_targets_and_symlinked_components_are_rejected_when_os_supports_links)",
+      "reason": "OS symlink creation unavailable; no OS-link proof: [WinError 1314] 客户端没有所需的特权。: 'README.md' -> 'E:\\\\零碎\\\\native-orchestrator-v03\\\\.runtime\\\\frame-003-test-82c46138addc49d8a17e745dbde0dba7\\\\c16-dd208a\\\\data\\\\workspaces\\\\df006eb905785849102cb1da6baf32fc9ea2810ab349dc03afd1f91c66af6750\\\\repo\\\\file-link.txt'"
+    },
+    {
+      "test": "test_symlinked_snapshot_root_is_rejected_before_executor (test_check_runner.CheckRunnerFixtureTests.test_symlinked_snapshot_root_is_rejected_before_executor)",
+      "reason": "platform cannot create the symlink fixture: [WinError 1314] 客户端没有所需的特权。: 'E:\\\\零碎\\\\native-orchestrator-v03\\\\.runtime\\\\frame-004-tests\\\\case-_4u80__t\\\\snapshot' -> 'E:\\\\零碎\\\\native-orchestrator-v03\\\\.runtime\\\\frame-004-tests\\\\case-_4u80__t\\\\snapshot-link'"
+    },
+    {
+      "test": "test_repository_symlink_is_rejected_or_skipped_only_for_windows_privilege (test_repo_materials.RepoMaterialsTests.test_repository_symlink_is_rejected_or_skipped_only_for_windows_privilege)",
+      "reason": "Windows symlink creation requires a privilege unavailable to this test account (WinError 1314)"
+    }
+  ],
+  "ordinary_non_symlink_projects_blocked": false,
+  "skip_reasons": [
+    {
+      "test": "test_symbolic_link_paths_are_rejected (test_execution_contract.ExecutionContractPreflightTests.test_symbolic_link_paths_are_rejected)",
+      "reason": "symlink creation unavailable in isolated worktree: [WinError 1314] 客户端没有所需的特权。: 'E:\\\\零碎\\\\native-orchestrator-v03\\\\.runtime\\\\frame-002-tests\\\\case-_w5dew8g\\\\repo\\\\calculator.py' -> 'E:\\\\零碎\\\\native-orchestrator-v03\\\\.runtime\\\\frame-002-tests\\\\case-_w5dew8g\\\\repo\\\\linked.py'"
+    },
+    {
+      "test": "test_source_data_and_workspace_parent_symlinks_are_rejected_when_os_supports_links (test_repo_workspace.RepoWorkspaceTests.test_source_data_and_workspace_parent_symlinks_are_rejected_when_os_supports_links)",
+      "reason": "OS symlink creation unavailable; no OS-link proof: [WinError 1314] 客户端没有所需的特权。: 'E:\\\\零碎\\\\native-orchestrator-v03\\\\.runtime\\\\frame-003-test-82c46138addc49d8a17e745dbde0dba7\\\\c15-1eadaa\\\\source' -> 'E:\\\\零碎\\\\native-orchestrator-v03\\\\.runtime\\\\frame-003-test-82c46138addc49d8a17e745dbde0dba7\\\\c15-1eadaa\\\\source-link'"
+    },
+    {
+      "test": "test_symlink_targets_and_symlinked_components_are_rejected_when_os_supports_links (test_repo_workspace.RepoWorkspaceTests.test_symlink_targets_and_symlinked_components_are_rejected_when_os_supports_links)",
+      "reason": "OS symlink creation unavailable; no OS-link proof: [WinError 1314] 客户端没有所需的特权。: 'README.md' -> 'E:\\\\零碎\\\\native-orchestrator-v03\\\\.runtime\\\\frame-003-test-82c46138addc49d8a17e745dbde0dba7\\\\c16-dd208a\\\\data\\\\workspaces\\\\df006eb905785849102cb1da6baf32fc9ea2810ab349dc03afd1f91c66af6750\\\\repo\\\\file-link.txt'"
+    },
+    {
+      "test": "test_symlinked_snapshot_root_is_rejected_before_executor (test_check_runner.CheckRunnerFixtureTests.test_symlinked_snapshot_root_is_rejected_before_executor)",
+      "reason": "platform cannot create the symlink fixture: [WinError 1314] 客户端没有所需的特权。: 'E:\\\\零碎\\\\native-orchestrator-v03\\\\.runtime\\\\frame-004-tests\\\\case-_4u80__t\\\\snapshot' -> 'E:\\\\零碎\\\\native-orchestrator-v03\\\\.runtime\\\\frame-004-tests\\\\case-_4u80__t\\\\snapshot-link'"
+    },
+    {
+      "test": "test_repository_symlink_is_rejected_or_skipped_only_for_windows_privilege (test_repo_materials.RepoMaterialsTests.test_repository_symlink_is_rejected_or_skipped_only_for_windows_privilege)",
+      "reason": "Windows symlink creation requires a privilege unavailable to this test account (WinError 1314)"
+    }
+  ],
+  "limits": [
+    "UNVERIFIED_WINDOWS_SYMLINK: five real OS symlink cases require unavailable WinError1314 privilege; real junction/Git120000 cases pass",
+    "V1 single independent ordinary tracked UTF8 text task; no binary/delete/rename/submodule or dependency graph",
+    "Local ordinary Git worktrees only; no remote, managed-worktree integration or production deployment",
+    "Legacy proof/1 and boundary-source upgrades need explicit reconciliation; no automatic migration or model replay",
+    "ReadOnly active write denial proven with zero-turn SDK command/exec preset, adapter thread/turn mapping tested; no extra adversarial model turn"
+  ],
+  "defer": [
+    "GitHub remote/Actions",
+    "Codex managed worktree integration",
+    "Windows upstream sandbox and privileged OS symlink support",
+    "UI/DAG/swarm/rebase/update daemon/deployment and broader task modes"
+  ],
+  "no_remote_credentials_system_sandbox_changes": true,
+  "workspace_clean_verified_before_final_checkpoint": true,
+  "next_action": "停止扩建框架，开始用于真实项目；GitHub remote / Codex managed worktree / Windows upstream sandbox 作为后续增强，不属于 V1 阻塞项。",
+  "evidence_binding": "TASKS/FRAME-006-ROUND3-EVIDENCE-BINDING.json",
+  "preliminary_validation": "Tool sandbox run had path-access errors; host development run was superseded by the final frozen regression after source changes. Neither is claimed as final acceptance."
+}

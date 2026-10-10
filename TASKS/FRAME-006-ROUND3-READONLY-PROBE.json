@@ -1,0 +1,27 @@
+{
+  "model_turns": 0,
+  "sandboxPolicy": {
+    "type": "readOnly"
+  },
+  "same_sdk_overrides_as_reviewer": true,
+  "native_user_agent": "Codex Desktop/0.162.0 (Windows 10.0.26200; x86_64) dumb (codex_python_sdk; 0.162.0)",
+  "sdk_version": "0.162.0",
+  "read": {
+    "exit_code": 0,
+    "stderr": "Failed to find real location of E:\\python\\python.exe\n",
+    "stdout": "unchanged\r\n"
+  },
+  "modify": {
+    "exit_code": 1,
+    "stderr": "Failed to find real location of E:\\python\\python.exe\nTraceback (most recent call last):\r\n  File \"<string>\", line 1, in <module>\r\n    from pathlib import Path;Path('marker.txt').write_text('changed')\r\n                             ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^\r\n  File \"E:\\python\\Lib\\pathlib\\__init__.py\", line 809, in write_text\r\n    with self.open(mode='w', encoding=encoding, errors=errors, newline=newline) as f:\r\n         ~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\r\n  File \"E:\\python\\Lib\\pathlib\\__init__.py\", line 771, in open\r\n    return io.open(self, mode, buffering, encoding, errors, newline)\r\n           ~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\r\nPermissionError: [Errno 13] Permission denied: 'marker.txt'\r\n",
+    "stdout": ""
+  },
+  "create": {
+    "exit_code": 1,
+    "stderr": "Failed to find real location of E:\\python\\python.exe\nTraceback (most recent call last):\r\n  File \"<string>\", line 1, in <module>\r\n    from pathlib import Path;Path('denied.txt').write_text('probe')\r\n                             ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^\r\n  File \"E:\\python\\Lib\\pathlib\\__init__.py\", line 809, in write_text\r\n    with self.open(mode='w', encoding=encoding, errors=errors, newline=newline) as f:\r\n         ~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\r\n  File \"E:\\python\\Lib\\pathlib\\__init__.py\", line 771, in open\r\n    return io.open(self, mode, buffering, encoding, errors, newline)\r\n           ~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\r\nPermissionError: [Errno 13] Permission denied: 'denied.txt'\r\n",
+    "stdout": ""
+  },
+  "fixture_unchanged": true,
+  "status": "PASS_RUNTIME_WRITE_DENIAL",
+  "temporary_probe_artifacts_deleted": true
+}
