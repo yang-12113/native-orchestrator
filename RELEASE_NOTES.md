@@ -1,11 +1,11 @@
-# native-orchestrator v1.0.0 — Release Notes 草稿
+# native-orchestrator v1.0.0 — Release Notes
 
-状态：DRAFT。GitHub Release 尚未创建；本地 v1.0.0 标签尚未推送。
+状态：FINAL RELEASE（正式发布）。
 
 ## 版本与来源
 
 - Release tag：`v1.0.0`。
-- Release commit：`2bc59217f8a04bd3ee4fcbe3fa1c4292c509586b`。
+- Release commit：`18e64efc0cd6340b537f1a71cd3df3a5862fb615`。
 - 分支：`codex/engineering-v03`。
 - 工程验收状态：FRAME-006 FINAL ACCEPTED_WITH_LIMITS。
 - 历史冻结标签：`controller-v1.0.0-local` → `004de591bd03127c61c502655b1a7668eea3413d`，保持原样。
@@ -55,11 +55,11 @@ Windows OS symlink 为 `UNVERIFIED_WINDOWS_SYMLINK`；真实 junction 与 Git mo
 
 项目当前分支新增根目录 `LICENSE`，采用 Apache License 2.0；第三方组件继续使用各自的许可证，随附 MIT 许可证与 NOTICE 保持不变。
 
-本次元数据准备是标签目标提交之后的新 commit。`v1.0.0` 仍固定指向 `2bc59217f8a04bd3ee4fcbe3fa1c4292c509586b`；根目录 LICENSE、README License 段和本文件不在该标签快照中。历史冻结标签与已有 commit 均保持原样。
+发布标签 `v1.0.0` 指向最终元数据提交 `18e64efc0cd6340b537f1a71cd3df3a5862fb615`，包含根目录 LICENSE、README License 段及 RELEASE_NOTES.md。标签快照中的说明文件保留准备阶段原文；GitHub Release 页面和当前分支发布说明已校正过时状态和目标 SHA。历史冻结标签与已有 commit 均保持原样。
 
-## 发布前待确认
+## 发布说明
 
-- 发布前确认：当前分支已含 Apache License 2.0 元数据，但现有 v1.0.0 标签快照不包含此次新增元数据。
-- 本文件随元数据 commit 保存，仍作为 GitHub Release 草稿；不属于现有 v1.0.0 标签快照。
-- 本地 v1.0.0 标签核对后，另行授权推送标签及创建 GitHub Release。
+- 本次发布快照包含 Apache License 2.0 项目元数据，第三方授权材料保持原样。
+- 发布描述基于标签内的 RELEASE_NOTES.md，仅更正准备阶段过时字段；技术事实、验证结果和已知限制保持原样。
+- 远程标签已核对，目标 commit 与发布快照一致。
 - 如需附带构建物或回归报告，应单独审核附件，不包含认证、私有配置或原始敏感日志。
