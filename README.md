@@ -84,3 +84,9 @@ python -B -m unittest discover -s tests -p 'test_*.py' -v
 所有历史 FRAME、acceptance JSON 和文档均保留；移动时未改写历史内容、原路径或哈希。旧相对引用按原布局解释，完整映射见 [FILE_LAYOUT](docs/history/FILE_LAYOUT.md)。[原 README](docs/history/README-before-structure.md) 和旧使用说明作为历史材料保存。
 
 `.runtime/`、历史 SQLite、原始日志和私有配置没有随 Git clone 提供。历史路径仅供追溯，不表示工件现在可用。源码路径和 import 调整会改变源文件指纹；已有 proof 按原版本和原提交追溯，继续运行必须遵守已有 reconciliation 规则，不自动补造新证明。
+
+## License
+
+This project is licensed under the Apache License 2.0.
+
+See [LICENSE](LICENSE). Third-party components retain their own licenses; see [native_support/NOTICE.md](src/native_orchestrator/native_support/NOTICE.md).
