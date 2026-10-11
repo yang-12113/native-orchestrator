@@ -1,5 +1,16 @@
 # native-orchestrator
 
+## Project Status
+
+🚧 Experimental / Testing Phase
+
+native-orchestrator v1.0.0 has completed the first engineering validation milestone.
+
+The project is currently under active testing and iteration on real-world workflows.
+
+This release is mainly intended for research and experimentation.
+Production readiness has not been fully established yet.
+
 native-orchestrator 是已有的原生模型协作控制器：通过 Git、SQLite 和确定性检查，组织受限代码修改、独立审查、有限返工、版本接纳和中断对账。普通工程使用 Codex SDK direct-worktree 路线；控制器掌握预算、候选冻结、检查、proof 和串行 promotion/CAS。
 
 ## 当前版本
